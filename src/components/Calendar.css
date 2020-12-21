@@ -1,0 +1,10 @@
+.calendar.card {
+  width: 100%;
+  background-color: white;
+}
+
+th,
+td {
+  width: 36px;
+  height: 36px;
+}
