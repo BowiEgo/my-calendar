@@ -1,25 +1,64 @@
-import "./Calendar.css";
+import { useState } from "react";
 import moment from "moment";
+import "./Calendar.css";
+import CalendarCell from "./CalendarCell";
+import { ChevronLeft, ChevronRight } from "react-feather";
 
 export default (props) => {
+  const date = moment();
+  const [startDay, setStartDay] = useState(date.startOf("month").clone());
+  const [calendar, setCalendar] = useState(getCalendar(date));
+
   const wl = ["日", "一", "二", "三", "四", "五", "六"].map((name, idx) => {
     return <th key={idx}>{name}</th>;
   });
-
-  const calendar = getCalendar(moment());
 
   const cl = calendar.map((week, widx) => {
     return (
       <tr key={widx}>
         {week.map((day, didx) => {
-          return <td key={didx}>{day.date()}</td>;
+          return (
+            <td key={didx}>
+              <CalendarCell day={day} startDay={startDay}></CalendarCell>
+            </td>
+          );
         })}
       </tr>
     );
   });
 
+  const prevMonth = () => {
+    setStartDay(startDay.subtract(1, "month").clone());
+    setCalendar(getCalendar(startDay));
+  };
+
+  const nextMonth = () => {
+    setStartDay(startDay.add(1, "month").clone());
+    setCalendar(getCalendar(startDay));
+  };
+
   return (
     <div className="calendar">
+      <div className="calendar-header">
+        <div className="flex-row">
+          <ChevronLeft
+            className="button prev-month"
+            color="rgb(160, 160, 160)"
+            size={20}
+            onClick={() => prevMonth()}
+          ></ChevronLeft>
+          <div style={{ margin: "0 10px" }}>
+            {startDay.format("YYYY年 MM月")}
+          </div>
+          <ChevronRight
+            className="button next-month"
+            color="rgb(160, 160, 160)"
+            size={20}
+            onClick={() => nextMonth()}
+          ></ChevronRight>
+        </div>
+        <button className="button today">今天</button>
+      </div>
       <table>
         <thead>
           <tr>{wl}</tr>
@@ -30,29 +69,21 @@ export default (props) => {
   );
 };
 
-function getCalendar(time) {
-  const days = time.daysInMonth();
-  const startOfMonth = time.startOf("month");
+function getCalendar(date) {
+  let calendar = [];
 
-  let array = new Array(6);
-  let week = 0;
-  let tempDate;
+  const startDay = date.clone().startOf("month").startOf("week");
+  const endDay = date.clone().endOf("month").endOf("week");
 
-  for (let i = 1; i <= days; i++) {
-    if (i === 1) {
-      tempDate = startOfMonth;
-      array[week] = new Array(7).fill(time);
-    }
+  let tempDate = startDay.clone().subtract(1, "day");
 
-    let tempDay = tempDate.day();
-    if (tempDay === 0) {
-      week++;
-      array[week] = new Array(7).fill(time);
-    }
-
-    array[week][tempDay] = moment(tempDate);
-    tempDate.add(1, "d");
+  while (tempDate.isBefore(endDay, "day") || !calendar[5]) {
+    calendar.push(
+      Array(7)
+        .fill(0)
+        .map(() => tempDate.add(1, "day").clone())
+    );
   }
 
-  return array;
+  return calendar;
 }

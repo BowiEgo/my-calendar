@@ -1,9 +1,18 @@
+body {
+  user-select: none;
+}
+
+li {
+  list-style: none;
+}
+
 button {
   outline: none;
   border: none;
   background-color: white;
   color: #333;
   box-shadow: 0 3px 7px 0 rgba(0, 0, 0, 0.2);
+  cursor: pointer;
 }
 
 button.round {
@@ -12,6 +21,28 @@ button.round {
 
 button.circle {
   border-radius: 50%;
+}
+
+::-webkit-scrollbar {
+  background: transparent;
+  height: 8px;
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  visibility: hidden;
+  border: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  background: #dadce0;
+  border-radius: 8px;
+  min-height: 40px;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .App {
@@ -46,18 +77,19 @@ button.circle {
   z-index: -1;
 }
 
-.App-navbar {
+.App-calendarbar {
   width: 280px;
   height: 100%;
-  padding: 0 20px;
-  background-color: bisque;
+  display: flex;
+  flex-direction: column;
   z-index: 0;
 }
 
 .App-content {
   flex: 1;
   height: 100%;
-  z-index: 1;
+  background-color: bisque;
+  z-index: -1;
 }
 
 .App-sidebar {
@@ -67,23 +99,31 @@ button.circle {
   z-index: 1;
 }
 
-.local-time {
-  text-align: left;
-  height: 120px;
-  box-sizing: border-box;
-  padding: 30px 0;
-  z-index: 1;
+.scroll-container {
+  overflow-y: scroll;
+  margin-top: -10px;
+}
+
+.scroll-container:hover::-webkit-scrollbar-thumb {
+  visibility: visible;
 }
 
 .local-time {
+  text-align: left;
+  height: 120px;
   line-height: 14px;
+  box-sizing: border-box;
+  padding: 30px 20px;
+  z-index: 1;
 }
 
 .button-group {
   display: flex;
   justify-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   margin-top: -18px;
+  padding: 0 20px;
+  z-index: 1;
 }
 
 .add-button {
@@ -101,9 +141,4 @@ button.circle {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.calendar.card {
-  width: 100%;
-  margin-top: 20px;
 }
