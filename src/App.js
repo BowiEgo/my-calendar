@@ -1,20 +1,30 @@
-import { useState } from "react";
-import "./assets/style/App.css";
+import { useState, useRef } from "react";
+import "./assets/styles/App.css";
 import Calendar from "./components/Calendar";
 import CalendarList from "./components/CalendarList";
-import CalendarCell from "./components/CalendarCell";
+import CalendarGrid from "./components/CalendarGrid";
 import { ChevronLeft, ChevronRight } from "react-feather";
 
 function App() {
+  const [currentDate, setCurrentDate] = useState(null);
   const [week, setWeek] = useState([]);
+
+  const childRef = useRef();
+
+  const prevWeek = () => {
+    childRef.current.prevWeek();
+  };
+
+  const nextWeek = () => {
+    childRef.current.nextWeek();
+  };
 
   return (
     <div className="App">
       <header className="App-header">header</header>
+      <div className="App-body-header"></div>
       <div className="App-body">
         <div className="App-calendarbar">
-          <div className="App-body-header"></div>
-
           <div className="local-time">
             <div>GMT+02</div>
             <h1>Nov 2020</h1>
@@ -33,10 +43,16 @@ function App() {
               创建
             </button>
             <div className="flex-row">
-              <button className="button circle prev-button">
+              <button
+                className="button circle prev-button"
+                onClick={() => prevWeek()}
+              >
                 <ChevronLeft color="grey" size={20}></ChevronLeft>
               </button>
-              <button className="button circle next-button">
+              <button
+                className="button circle next-button"
+                onClick={() => nextWeek()}
+              >
                 <ChevronRight color="grey" size={20}></ChevronRight>
               </button>
             </div>
@@ -44,14 +60,18 @@ function App() {
 
           <div className="scroll-container">
             <div className="calendar card">
-              <Calendar></Calendar>
+              <Calendar
+                ref={childRef}
+                change={setCurrentDate}
+                changeWeek={setWeek}
+              ></Calendar>
             </div>
 
             <CalendarList></CalendarList>
           </div>
         </div>
         <div className="App-content">
-          <CalendarCell week={week}></CalendarCell>
+          <CalendarGrid selectedDate={currentDate} week={week}></CalendarGrid>
         </div>
         <div className="App-sidebar"></div>
       </div>

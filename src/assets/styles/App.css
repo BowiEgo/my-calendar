@@ -1,5 +1,15 @@
+@font-face {
+  font-family: "Roboto";
+  src: url("../fonts/Roboto-Regular.ttf");
+}
+/* 
+* {
+  box-sizing: border-box;
+} */
+
 body {
   user-select: none;
+  font-family: "Roboto";
 }
 
 li {
@@ -50,7 +60,7 @@ button.circle {
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: #d3d3d3;
   height: 72px;
   display: flex;
   flex-direction: column;
@@ -88,14 +98,14 @@ button.circle {
 .App-content {
   flex: 1;
   height: 100%;
-  background-color: bisque;
-  z-index: -1;
+  background-color: transparent;
+  z-index: 2;
 }
 
 .App-sidebar {
   width: 60px;
   height: 100%;
-  background-color: rgb(168, 111, 41);
+  background-color: rgb(255, 240, 221);
   z-index: 1;
 }
 
@@ -113,8 +123,12 @@ button.circle {
   height: 120px;
   line-height: 14px;
   box-sizing: border-box;
-  padding: 30px 20px;
+  padding: 20px 20px 40px 20px;
   z-index: 1;
+}
+
+.local-time div {
+  color: #9e9e9e;
 }
 
 .button-group {

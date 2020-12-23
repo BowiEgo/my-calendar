@@ -1,29 +1,35 @@
 import "./CalendarCell.css";
 import moment from "moment";
 
-export default (props) => {
+const CalendarCell = (props) => {
+  const { date } = props;
   let className = "calendar-cell";
 
-  if (!props.day) {
+  if (!date) {
     return <div></div>;
   }
 
-  const today = moment().startOf("day");
+  const today = moment().startOf("day").clone();
 
-  if (today.diff(props.day, "days") === 0) {
+  if (today.isSame(date)) {
     className += " today";
   }
-  if (props.day.month() !== props.startDay.month()) {
+  if (date.month() !== props.startDay.month()) {
     className += " not-same-month";
   }
+  if (props.isActive) {
+    className += " active";
+  }
 
-  const handleClick = (day) => {
-    console.log(day);
+  const handleClick = () => {
+    props.onClick(date);
   };
 
   return (
-    <div className={className} onClick={() => handleClick(props.day)}>
-      {props.day.date()}
+    <div className="calendar-cell-container" onClick={() => handleClick()}>
+      <div className={className}>{date.date()}</div>
     </div>
   );
 };
+
+export default CalendarCell;
