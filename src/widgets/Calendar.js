@@ -1,10 +1,11 @@
 import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
+import styled from "styled-components";
 import moment from "moment";
-import "./Calendar.css";
-import CalendarCell from "./CalendarCell";
 import { ChevronLeft, ChevronRight } from "react-feather";
+import { Button, ButtonGroup } from "../components";
+import { CalendarCell } from "../widgets";
 
-let Calendar = (props, ref) => {
+const CalendarComponent = (props, ref) => {
   const [startOfMonth, setStartOfMonth] = useState(
     moment().startOf("month").clone()
   );
@@ -29,7 +30,6 @@ let Calendar = (props, ref) => {
   const handleClickCell = (date) => {
     const d = date.clone();
     const row = getRow(d, startOfMonth);
-    console.log("row", row);
     const weekStart = d.clone().startOf("week").clone();
 
     setCurrentDate(calendar[row][d.weekday()]);
@@ -65,7 +65,11 @@ let Calendar = (props, ref) => {
   }));
 
   const wl = ["日", "一", "二", "三", "四", "五", "六"].map((name, idx) => {
-    return <th key={idx}>{name}</th>;
+    return (
+      <Th as="th" key={idx}>
+        {name}
+      </Th>
+    );
   });
 
   const cl = calendar.map((week, row) => {
@@ -73,14 +77,14 @@ let Calendar = (props, ref) => {
       <tr key={row}>
         {week.map((date, col) => {
           return (
-            <td key={col}>
+            <Td key={col}>
               <CalendarCell
                 date={date}
                 isActive={currentDate.isSame(date)}
                 startDay={startOfMonth}
                 onClick={handleClickCell}
-              ></CalendarCell>
-            </td>
+              />
+            </Td>
           );
         })}
       </tr>
@@ -88,35 +92,25 @@ let Calendar = (props, ref) => {
   });
 
   return (
-    <div className="calendar">
-      <div className="calendar-header">
-        <div className="flex-row">
-          <ChevronLeft
-            className="button prev-month"
-            color="rgb(160, 160, 160)"
-            size={20}
-            onClick={() => prevMonth()}
-          ></ChevronLeft>
-          <div style={{ margin: "0 10px" }}>
-            {startOfMonth.format("YYYY年 MM月")}
-          </div>
-          <ChevronRight
-            className="button next-month"
-            color="rgb(160, 160, 160)"
-            size={20}
-            onClick={() => nextMonth()}
-          ></ChevronRight>
-        </div>
-        <button className="button today">今天</button>
-      </div>
+    <Container>
+      <CalendarHeader>
+        <MonthHeader>{startOfMonth.format("YYYY年 MM月")}</MonthHeader>
+        <ButtonGroup width="66">
+          <MonthButton border onClick={() => prevMonth()}>
+            <ChevronLeft className="button prev-month" color="#333" size={20} />
+          </MonthButton>
+
+          <MonthButton border onClick={() => nextMonth()}>
+            <ChevronRight
+              className="button next-month"
+              color="#333"
+              size={20}
+            />
+          </MonthButton>
+        </ButtonGroup>
+      </CalendarHeader>
       <div style={{ position: "relative" }}>
-        <div
-          className="week-bg"
-          style={{
-            // computed待优化
-            transform: `translateY(${currentWeek * 36}px)`,
-          }}
-        ></div>
+        <WeekBg translateY={currentWeek * 36 + "px"}></WeekBg>
         <table>
           <thead>
             <tr>{wl}</tr>
@@ -125,7 +119,7 @@ let Calendar = (props, ref) => {
           <tbody>{cl}</tbody>
         </table>
       </div>
-    </div>
+    </Container>
   );
 };
 
@@ -157,6 +151,62 @@ function getRow(date, startDay) {
   return row;
 }
 
-Calendar = forwardRef(Calendar);
+const Container = styled.div`
+  position: relative;
+  width: 100%;
+  background-color: transparent;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
 
-export default Calendar;
+const CalendarHeader = styled.div`
+  width: 100%;
+  padding: 16px 7px 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const MonthHeader = styled.div`
+  font-weight: 600;
+  text-align: left;
+  margin: 0 10px;
+  flex: 1;
+`;
+
+const MonthButton = styled(Button)`
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const WeekBg = styled.div`
+  position: absolute;
+  top: 37px;
+  left: 0;
+  width: 100%;
+  height: 36px;
+  border-radius: 8px;
+  background-color: #efe9ff;
+  transition: transform ease 0.1s;
+  z-index: -1;
+  transform: translateY(${(props) => props.translateY});
+`;
+
+const Td = styled.td`
+  width: 34px;
+  height: 34px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+`;
+
+const Th = styled(Td)`
+  color: rgb(160, 160, 160);
+`;
+
+export default forwardRef(CalendarComponent);

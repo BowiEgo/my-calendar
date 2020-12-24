@@ -1,9 +1,97 @@
 import { useState, useRef } from "react";
-import "./assets/styles/App.css";
-import Calendar from "./components/Calendar";
-import CalendarList from "./components/CalendarList";
-import CalendarGrid from "./components/CalendarGrid";
-import { ChevronLeft, ChevronRight } from "react-feather";
+import styled from "styled-components";
+import { Calendar, CalendarGrid, CalendarList, CalendarType } from "./widgets";
+import { ChevronLeft, ChevronRight, MessageSquare } from "react-feather";
+
+const AppBody = styled.div`
+  display: flex;
+  flex-direction: row;
+  height: calc(100vh - 72px - 88px);
+`;
+
+const AppContent = styled.div`
+  flex: 1;
+  height: 100%;
+  padding: 0 40px;
+  background-color: transparent;
+  z-index: 2;
+`;
+
+const AppNavBar = styled.div`
+  height: 72px;
+  border-bottom: 1px solid #e8e3f7;
+`;
+
+const CalendarBar = styled.div`
+  width: 320px;
+  height: 100vh;
+  padding: 0 20px 0 40px;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f7fd;
+  z-index: 0;
+`;
+
+const UserComp = styled.div`
+  position: relative;
+  padding: 14px 20px 14px 0;
+  display: flex;
+  justify-content: space-between;
+  background-color: inherit;
+  &::after {
+    content: "";
+    display: block;
+    width: 240px;
+    height: 1px;
+    background-color: #e8e3f7;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  }
+`;
+
+const UserPic = styled.div`
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: white;
+  }
+`;
+
+const ScrollContainer = styled.div`
+  overflow-y: scroll;
+  padding-right: 10px;
+  margin-top: 20px;
+  margin-left: -10px;
+  &:hover::-webkit-scrollbar-thumb {
+    visibility: visible;
+  }
+  .local-time {
+    text-align: left;
+    height: 120px;
+    line-height: 14px;
+    box-sizing: border-box;
+    padding: 20px 20px 40px 20px;
+    z-index: 1;
+    div {
+      color: #9e9e9e;
+    }
+  }
+`;
+
+const Notification = styled.div`
+  width: 100%;
+  height: 140px;
+  margin-top: 30px;
+  border-radius: 14px;
+  background-color: #e8e3f7;
+`;
 
 function App() {
   const [currentDate, setCurrentDate] = useState(null);
@@ -20,28 +108,15 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <header className="App-header">header</header>
-      <div className="App-body-header"></div>
-      <div className="App-body">
-        <div className="App-calendarbar">
-          <div className="local-time">
-            <div>GMT+02</div>
-            <h1>Nov 2020</h1>
-          </div>
-
-          <div className="button-group">
-            <button className="button round add-button">
-              {/* icon组件待优化 */}
-              <svg width="36" height="36" viewBox="0 0 36 36">
-                <path fill="#34A853" d="M16 16v14h4V20z"></path>
-                <path fill="#4285F4" d="M30 16H20l-4 4h14z"></path>
-                <path fill="#FBBC05" d="M6 16v4h10l4-4z"></path>
-                <path fill="#EA4335" d="M20 16V6h-4v14z"></path>
-                <path fill="none" d="M0 0h36v36H0z"></path>
-              </svg>
-              创建
-            </button>
+    <div id="App">
+      <AppBody>
+        <AppContent>
+          <AppNavBar></AppNavBar>
+          <CalendarType></CalendarType>
+          <CalendarGrid selectedDate={currentDate} week={week}></CalendarGrid>
+        </AppContent>
+        <CalendarBar>
+          {/* <div className="button-group">
             <div className="flex-row">
               <button
                 className="button circle prev-button"
@@ -56,25 +131,28 @@ function App() {
                 <ChevronRight color="grey" size={20}></ChevronRight>
               </button>
             </div>
-          </div>
-
-          <div className="scroll-container">
-            <div className="calendar card">
-              <Calendar
-                ref={childRef}
-                change={setCurrentDate}
-                changeWeek={setWeek}
-              ></Calendar>
+          </div> */}
+          <UserComp>
+            <div className="message">
+              {/* <MessageSquare color="grey" size={20}></MessageSquare> */}
             </div>
+            <UserPic>
+              <img src="https://www.kindpng.com/picc/m/78-786207_user-avatar-png-user-avatar-icon-png-transparent.png"></img>
+            </UserPic>
+          </UserComp>
+          <ScrollContainer>
+            <Calendar
+              ref={childRef}
+              change={setCurrentDate}
+              changeWeek={setWeek}
+            ></Calendar>
+
+            <Notification></Notification>
 
             <CalendarList></CalendarList>
-          </div>
-        </div>
-        <div className="App-content">
-          <CalendarGrid selectedDate={currentDate} week={week}></CalendarGrid>
-        </div>
-        <div className="App-sidebar"></div>
-      </div>
+          </ScrollContainer>
+        </CalendarBar>
+      </AppBody>
     </div>
   );
 }
