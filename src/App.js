@@ -1,7 +1,81 @@
-import { useState, useRef } from "react";
-import styled from "styled-components";
-import { Calendar, CalendarGrid, CalendarList, CalendarType } from "./widgets";
-import { ChevronLeft, ChevronRight, MessageSquare } from "react-feather";
+import { useState, useRef } from 'react';
+import styled, { ThemeProvider } from 'styled-components';
+import { main } from './themes';
+// import { ChevronLeft, ChevronRight, MessageSquare } from 'react-feather';
+import {
+  Calendar,
+  CalendarGrid,
+  CalendarList,
+  CalendarType,
+  NavBar,
+} from './widgets';
+
+function App() {
+  const [currentDate, setCurrentDate] = useState(null);
+  const [week, setWeek] = useState([]);
+
+  const childRef = useRef();
+
+  const prevWeek = () => {
+    childRef.current.prevWeek();
+  };
+
+  const nextWeek = () => {
+    childRef.current.nextWeek();
+  };
+
+  return (
+    <ThemeProvider theme={main}>
+      <AppBody>
+        <AppContent>
+          <NavBar></NavBar>
+          <CalendarType></CalendarType>
+          <CalendarGrid selectedDate={currentDate} week={week}></CalendarGrid>
+        </AppContent>
+        <CalendarBar>
+          {/* <div className="button-group">
+            <div className="flex-row">
+              <button
+                className="button circle prev-button"
+                onClick={() => prevWeek()}
+              >
+                <ChevronLeft color="grey" size={20}></ChevronLeft>
+              </button>
+              <button
+                className="button circle next-button"
+                onClick={() => nextWeek()}
+              >
+                <ChevronRight color="grey" size={20}></ChevronRight>
+              </button>
+            </div>
+          </div> */}
+          <UserComp>
+            <div className="message">
+              {/* <MessageSquare color="grey" size={20}></MessageSquare> */}
+            </div>
+            <UserPic>
+              <img
+                alt="avatar"
+                src="https://www.kindpng.com/picc/m/78-786207_user-avatar-png-user-avatar-icon-png-transparent.png"
+              ></img>
+            </UserPic>
+          </UserComp>
+          <ScrollContainer>
+            <Calendar
+              ref={childRef}
+              change={setCurrentDate}
+              changeWeek={setWeek}
+            ></Calendar>
+
+            <Notification></Notification>
+
+            <CalendarList></CalendarList>
+          </ScrollContainer>
+        </CalendarBar>
+      </AppBody>
+    </ThemeProvider>
+  );
+}
 
 const AppBody = styled.div`
   display: flex;
@@ -15,11 +89,6 @@ const AppContent = styled.div`
   padding: 0 40px;
   background-color: transparent;
   z-index: 2;
-`;
-
-const AppNavBar = styled.div`
-  height: 72px;
-  border-bottom: 1px solid #e8e3f7;
 `;
 
 const CalendarBar = styled.div`
@@ -39,7 +108,7 @@ const UserComp = styled.div`
   justify-content: space-between;
   background-color: inherit;
   &::after {
-    content: "";
+    content: '';
     display: block;
     width: 240px;
     height: 1px;
@@ -92,69 +161,5 @@ const Notification = styled.div`
   border-radius: 14px;
   background-color: #e8e3f7;
 `;
-
-function App() {
-  const [currentDate, setCurrentDate] = useState(null);
-  const [week, setWeek] = useState([]);
-
-  const childRef = useRef();
-
-  const prevWeek = () => {
-    childRef.current.prevWeek();
-  };
-
-  const nextWeek = () => {
-    childRef.current.nextWeek();
-  };
-
-  return (
-    <div id="App">
-      <AppBody>
-        <AppContent>
-          <AppNavBar></AppNavBar>
-          <CalendarType></CalendarType>
-          <CalendarGrid selectedDate={currentDate} week={week}></CalendarGrid>
-        </AppContent>
-        <CalendarBar>
-          {/* <div className="button-group">
-            <div className="flex-row">
-              <button
-                className="button circle prev-button"
-                onClick={() => prevWeek()}
-              >
-                <ChevronLeft color="grey" size={20}></ChevronLeft>
-              </button>
-              <button
-                className="button circle next-button"
-                onClick={() => nextWeek()}
-              >
-                <ChevronRight color="grey" size={20}></ChevronRight>
-              </button>
-            </div>
-          </div> */}
-          <UserComp>
-            <div className="message">
-              {/* <MessageSquare color="grey" size={20}></MessageSquare> */}
-            </div>
-            <UserPic>
-              <img src="https://www.kindpng.com/picc/m/78-786207_user-avatar-png-user-avatar-icon-png-transparent.png"></img>
-            </UserPic>
-          </UserComp>
-          <ScrollContainer>
-            <Calendar
-              ref={childRef}
-              change={setCurrentDate}
-              changeWeek={setWeek}
-            ></Calendar>
-
-            <Notification></Notification>
-
-            <CalendarList></CalendarList>
-          </ScrollContainer>
-        </CalendarBar>
-      </AppBody>
-    </div>
-  );
-}
 
 export default App;

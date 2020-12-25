@@ -1,6 +1,6 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
-const CalendarType = (props) => {
+const CalendarType = props => {
   return (
     <Container>
       <h2>2020年 12月</h2>

@@ -1,31 +1,34 @@
-import moment from "moment";
-import styled from "styled-components";
+import { useContext } from 'react';
+import styled, { ThemeContext } from 'styled-components';
+import moment from 'moment';
 
-const CalendarCell = (props) => {
+const CalendarCell = props => {
+  const themeContext = useContext(ThemeContext);
+
   const { date } = props;
 
   if (!date) {
     return <div />;
   }
 
-  const today = moment().startOf("day").clone();
+  const today = moment().startOf('day').clone();
 
   // compute styles
-  let backgroundColor = "inherit";
-  let textColor = "#333";
+  let backgroundColor = 'inherit';
+  let textColor = themeContext.textColor;
 
   if (date.month() !== props.startDay.month()) {
-    textColor = "rgb(160, 160, 160)";
+    textColor = themeContext.disabledColor;
   }
 
   if (today.isSame(date)) {
-    backgroundColor = "rgb(243, 109, 154)";
-    textColor = "white";
+    backgroundColor = themeContext.hightlightColor;
+    textColor = 'white';
   }
 
   if (props.isActive) {
-    backgroundColor = primary;
-    textColor = "white";
+    backgroundColor = themeContext.primaryColor;
+    textColor = 'white';
   }
 
   // functions
@@ -42,8 +45,6 @@ const CalendarCell = (props) => {
   );
 };
 
-const primary = "rgb(85, 68, 228)";
-
 const CellContainer = styled.div`
   cursor: pointer;
   width: 100%;
@@ -58,9 +59,9 @@ const Cell = styled.div`
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background-color: ${(props) => props.backgroundColor};
-  color: ${(props) => props.color};
-  font-family: "Roboto";
+  background-color: ${props => props.backgroundColor};
+  color: ${props => props.color};
+  font-family: 'Roboto';
 `;
 
 export default CalendarCell;

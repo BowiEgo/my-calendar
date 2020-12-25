@@ -1,8 +1,8 @@
-import styled from "styled-components";
-import { ChevronDown, Plus, Square, CheckSquare } from "react-feather";
-import { Button, ButtonGroup } from "../components";
+import styled from 'styled-components';
+import { ChevronDown, Plus, Square, CheckSquare } from 'react-feather';
+import { Button, ButtonGroup } from '../components';
 
-const CalendarList = (props) => {
+const CalendarList = props => {
   return (
     <Container>
       <ListHeader>

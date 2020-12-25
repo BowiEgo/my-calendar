@@ -1,10 +1,8 @@
-import styled from "styled-components";
-import moment from "moment";
-import { Calendar as CalendarIcon } from "react-feather";
+import styled from 'styled-components';
+import moment from 'moment';
+import { Calendar as CalendarIcon } from 'react-feather';
 
-const primary = "rgb(85, 68, 228)";
-
-const CalendarGrid = (props) => {
+const CalendarGrid = props => {
   const { selectedDate, week } = props;
   const weekdaysShort = moment.weekdaysShort();
 
@@ -12,7 +10,7 @@ const CalendarGrid = (props) => {
     return (
       <WeekCell
         isActive={date.isSame(selectedDate)}
-        isToday={date.isSame(moment().startOf("day"))}
+        isToday={date.isSame(moment().startOf('day'))}
         key={idx}
       >
         <h5>{weekdaysShort[date.weekday()]}</h5>
@@ -31,6 +29,9 @@ const CalendarGrid = (props) => {
       {hours.map((h, index) => (
         <GridLabelCell key={index}>
           <span>{h < 10 ? `0${h}:00` : `${h}:00`}</span>
+          <Tick width={16} top={'25%'}></Tick>
+          <Tick width={32} top={'50%'}></Tick>
+          <Tick width={16} top={'75%'}></Tick>
         </GridLabelCell>
       ))}
     </div>
@@ -66,8 +67,6 @@ const CalendarGrid = (props) => {
   );
 };
 
-const borderColor = "#e8e3f7";
-
 const GridContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -82,9 +81,9 @@ const GridWeekContainer = styled.div`
 const GridWeek = styled.div`
   display: flex;
   flex: 1;
-  border-top: 1px solid ${borderColor};
-  border-bottom: 1px solid ${borderColor};
-  background-color: #f8f7fd;
+  border-top: 1px solid ${props => props.theme.borderColor};
+  border-bottom: 1px solid ${props => props.theme.borderColor};
+  background-color: ${props => props.theme.primaryColorTertiary};
 `;
 
 const WeekLabelContainer = styled.div`
@@ -93,14 +92,14 @@ const WeekLabelContainer = styled.div`
   padding: 4px;
   display: flex;
   &::after {
-    content: "";
+    content: '';
     display: block;
     width: 1px;
     height: 100%;
     position: absolute;
     right: -1px;
     top: 0;
-    background-color: ${borderColor};
+    background-color: ${props => props.theme.borderColor};
   }
 `;
 
@@ -110,7 +109,7 @@ const WeekLabel = styled.div`
   justify-content: center;
   flex: 1;
   border-radius: 3px;
-  background-color: #e8e3f7;
+  background-color: ${props => props.theme.primaryColorSecondary};
 `;
 
 const WeekCell = styled.div`
@@ -121,28 +120,28 @@ const WeekCell = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid ${borderColor};
+  border-right: 1px solid ${props => props.theme.borderColor};
   line-height: 26px;
   span {
     font-size: 14px;
-    color: ${(props) => {
+    color: ${props => {
       if (props.isActive) {
-        return primary;
+        return props.theme.primaryColor;
       } else if (props.isToday) {
-        return "rgb(243, 109, 154)";
+        return props.theme.hightlightColor;
       }
-      return "#9e9e9e";
+      return props.theme.textColorSecondary;
     }};
   }
   h5 {
     margin: 0;
-    color: ${(props) => {
+    color: ${props => {
       if (props.isActive) {
-        return primary;
+        return props.theme.primaryColor;
       } else if (props.isToday) {
-        return "rgb(243, 109, 154)";
+        return props.theme.hightlightColor;
       }
-      return "#333";
+      return props.theme.textColor;
     }};
   }
 `;
@@ -168,7 +167,10 @@ const GridLabel = styled.div`
 `;
 
 const GridLabelCell = styled.div`
+  position: relative;
   height: 7vw;
+  display: flex;
+  flex-direction: column;
   &:first-child span {
     display: none;
   }
@@ -176,6 +178,15 @@ const GridLabelCell = styled.div`
     display: block;
     transform: translateY(-6px);
   }
+`;
+
+const Tick = styled.div`
+  position: absolute;
+  left: 0;
+  top: ${props => props.top};
+  width: ${props => props.width + 'px'};
+  height: 1px;
+  background-color: ${props => props.theme.tickColor};
 `;
 
 const GridTable = styled.div`
@@ -186,14 +197,14 @@ const GridTable = styled.div`
 const GridTableCol = styled.div`
   flex: 1;
   &:first-child .grid-table-cell {
-    border-left: 1px solid ${borderColor};
+    border-left: 1px solid ${props => props.theme.borderColor};
   }
 `;
 
 const GridTableCell = styled.div`
   height: 7vw;
-  border-bottom: 1px solid ${borderColor};
-  border-right: 1px solid ${borderColor};
+  border-bottom: 1px solid ${props => props.theme.borderColor};
+  border-right: 1px solid ${props => props.theme.borderColor};
   box-sizing: border-box;
 `;
 

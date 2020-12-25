@@ -1,36 +1,44 @@
-import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
-import styled from "styled-components";
-import moment from "moment";
-import { ChevronLeft, ChevronRight } from "react-feather";
-import { Button, ButtonGroup } from "../components";
-import { CalendarCell } from "../widgets";
+import {
+  useState,
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+  useContext,
+} from 'react';
+import styled, { ThemeContext } from 'styled-components';
+import moment from 'moment';
+import { ChevronLeft, ChevronRight } from 'react-feather';
+import { Button, ButtonGroup } from '../components';
+import { CalendarCell } from '../widgets';
 
 const CalendarComponent = (props, ref) => {
+  const themeContext = useContext(ThemeContext);
+
   const [startOfMonth, setStartOfMonth] = useState(
-    moment().startOf("month").clone()
+    moment().startOf('month').clone(),
   );
   const [startOfWeek, setStartOfWeek] = useState(
-    moment().startOf("week").clone()
+    moment().startOf('week').clone(),
   );
   const [calendar, setCalendar] = useState(getCalendar(moment()));
   const [currentWeek, setCurrentWeek] = useState(
-    getRow(moment(), startOfMonth)
+    getRow(moment(), startOfMonth),
   );
   const [currentDate, setCurrentDate] = useState(
-    calendar[currentWeek][moment().weekday()]
+    calendar[currentWeek][moment().weekday()],
   );
 
   useEffect(() => {
     props.change(currentDate);
-    if (startOfMonth.isSame(currentDate.clone().startOf("month"))) {
+    if (startOfMonth.isSame(currentDate.clone().startOf('month'))) {
       props.changeWeek(calendar[currentWeek]);
     }
   });
 
-  const handleClickCell = (date) => {
+  const handleClickCell = date => {
     const d = date.clone();
     const row = getRow(d, startOfMonth);
-    const weekStart = d.clone().startOf("week").clone();
+    const weekStart = d.clone().startOf('week').clone();
 
     setCurrentDate(calendar[row][d.weekday()]);
 
@@ -42,12 +50,12 @@ const CalendarComponent = (props, ref) => {
   };
 
   const prevMonth = () => {
-    setStartOfMonth(startOfMonth.subtract(1, "month").clone());
+    setStartOfMonth(startOfMonth.subtract(1, 'month').clone());
     setCalendar(getCalendar(startOfMonth));
   };
 
   const nextMonth = () => {
-    setStartOfMonth(startOfMonth.add(1, "month").clone());
+    setStartOfMonth(startOfMonth.add(1, 'month').clone());
     setCalendar(getCalendar(startOfMonth));
   };
 
@@ -64,7 +72,7 @@ const CalendarComponent = (props, ref) => {
     },
   }));
 
-  const wl = ["日", "一", "二", "三", "四", "五", "六"].map((name, idx) => {
+  const wl = ['日', '一', '二', '三', '四', '五', '六'].map((name, idx) => {
     return (
       <Th as="th" key={idx}>
         {name}
@@ -94,23 +102,27 @@ const CalendarComponent = (props, ref) => {
   return (
     <Container>
       <CalendarHeader>
-        <MonthHeader>{startOfMonth.format("YYYY年 MM月")}</MonthHeader>
+        <MonthHeader>{startOfMonth.format('YYYY年 MM月')}</MonthHeader>
         <ButtonGroup width="66">
           <MonthButton border onClick={() => prevMonth()}>
-            <ChevronLeft className="button prev-month" color="#333" size={20} />
+            <ChevronLeft
+              className="button prev-month"
+              color={themeContext.textColor}
+              size={20}
+            />
           </MonthButton>
 
           <MonthButton border onClick={() => nextMonth()}>
             <ChevronRight
               className="button next-month"
-              color="#333"
+              color={themeContext.textColor}
               size={20}
             />
           </MonthButton>
         </ButtonGroup>
       </CalendarHeader>
-      <div style={{ position: "relative" }}>
-        <WeekBg translateY={currentWeek * 36 + "px"}></WeekBg>
+      <div style={{ position: 'relative' }}>
+        <WeekBg translateY={currentWeek * 36 + 1 + 'px'}></WeekBg>
         <table>
           <thead>
             <tr>{wl}</tr>
@@ -126,16 +138,16 @@ const CalendarComponent = (props, ref) => {
 function getCalendar(date) {
   let calendar = [];
 
-  const startDay = date.clone().startOf("month").startOf("week");
-  const endDay = date.clone().endOf("month").endOf("week");
+  const startDay = date.clone().startOf('month').startOf('week');
+  const endDay = date.clone().endOf('month').endOf('week');
 
-  let tempDate = startDay.clone().subtract(1, "day");
+  let tempDate = startDay.clone().subtract(1, 'day');
 
-  while (tempDate.isBefore(endDay, "day") || !calendar[5]) {
+  while (tempDate.isBefore(endDay, 'day') || !calendar[5]) {
     calendar.push(
       Array(7)
         .fill(0)
-        .map(() => tempDate.add(1, "day").clone())
+        .map(() => tempDate.add(1, 'day').clone()),
     );
   }
 
@@ -143,9 +155,9 @@ function getCalendar(date) {
 }
 
 function getRow(date, startDay) {
-  startDay = startDay.clone().startOf("month").startOf("week");
+  startDay = startDay.clone().startOf('month').startOf('week');
   let row = Math.ceil(
-    (date.clone().startOf("day").diff(startDay, "days") + 0.1) / 7
+    (date.clone().startOf('day').diff(startDay, 'days') + 0.1) / 7,
   );
   row = row <= 0 ? 0 : row - 1;
   return row;
@@ -189,24 +201,24 @@ const WeekBg = styled.div`
   top: 37px;
   left: 0;
   width: 100%;
-  height: 36px;
+  height: 34px;
   border-radius: 8px;
-  background-color: #efe9ff;
+  background-color: ${props => props.theme.primaryColorSecondary};
   transition: transform ease 0.1s;
   z-index: -1;
-  transform: translateY(${(props) => props.translateY});
+  transform: translateY(${props => props.translateY});
 `;
 
 const Td = styled.td`
   width: 34px;
   height: 34px;
-  font-size: 14px;
+  font-size: ${props => props.theme.fontSize};
   font-weight: 500;
-  color: #333;
+  color: ${props => props.theme.textColor};
 `;
 
 const Th = styled(Td)`
-  color: rgb(160, 160, 160);
+  color: ${props => props.theme.textColorSecondary};
 `;
 
 export default forwardRef(CalendarComponent);

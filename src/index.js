@@ -1,24 +1,24 @@
-import React from "react";
-import ReactDOM from "react-dom";
-import "./assets/styles/common.scss";
-import App from "./App";
-import reportWebVitals from "./reportWebVitals";
-import moment from "moment";
-import "moment/locale/zh-cn";
+import React from 'react';
+import ReactDOM from 'react-dom';
+import './assets/styles/common.scss';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+import moment from 'moment';
+import 'moment/locale/zh-cn';
 
-moment.updateLocale("zh-cn", {
+moment.updateLocale('zh-cn', {
   week: {
     dow: 0,
   },
 });
 
-console.log("moment locale:", moment.locale());
+console.log('moment locale:', moment.locale());
 
 ReactDOM.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
-  document.getElementById("root")
+  document.getElementById('root'),
 );
 
 // If you want to start measuring performance in your app, pass a function
