@@ -1,46 +1,33 @@
 import styled from 'styled-components';
 import { ChevronDown, Plus, Square, CheckSquare } from 'react-feather';
-import { Button, ButtonGroup } from '../components';
+import { Button } from '../components';
 
 const CalendarList = props => {
   return (
     <Container>
       <ListHeader>
-        <h5>我的日历</h5>
-        <ButtonGroup>
-          <Button>
-            <Plus className="button add" color="rgb(160, 160, 160)" size={20} />
-          </Button>
-          <Button>
-            <ChevronDown
-              className="button open"
-              color="rgb(160, 160, 160)"
-              size={20}
-            />
-          </Button>
-        </ButtonGroup>
+        <h5>分类</h5>
+        <Button circle border width={30}>
+          <Plus color="rgb(160, 160, 160)" size={12} />
+        </Button>
       </ListHeader>
       <ul>
-        <li>
+        <ListItem>
           <CheckSquare
             className="button add"
             color="rgb(160, 160, 160)"
             size={20}
           />
-          <span>生日</span>
-        </li>
-        <li>
+          <span>日常</span>
+        </ListItem>
+        <ListItem>
           <Square className="button add" color="rgb(160, 160, 160)" size={20} />
-          <span>提醒</span>
-        </li>
-        <li>
+          <span>工作</span>
+        </ListItem>
+        <ListItem>
           <Square className="button add" color="rgb(160, 160, 160)" size={20} />
-          <span>提醒</span>
-        </li>
-        <li>
-          <Square className="button add" color="rgb(160, 160, 160)" size={20} />
-          <span>提醒</span>
-        </li>
+          <span>节日</span>
+        </ListItem>
       </ul>
     </Container>
   );

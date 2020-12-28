@@ -5,6 +5,7 @@ import CalendarGrid from './CalendarGrid';
 import CalendarList from './CalendarList';
 import CalendarType from './CalendarType';
 import NavBar from './NavBar';
+import SearchBar from './SearchBar';
 
 const widgets = [
   Calendar,
@@ -13,6 +14,7 @@ const widgets = [
   CalendarList,
   CalendarType,
   NavBar,
+  SearchBar,
 ];
 
 widgets.forEach(widget => {
@@ -26,4 +28,5 @@ export {
   CalendarList,
   CalendarType,
   NavBar,
+  SearchBar,
 };
