@@ -104,20 +104,12 @@ const CalendarComponent = (props, ref) => {
       <CalendarHeader>
         <MonthHeader>{startOfMonth.format('YYYY年 MM月')}</MonthHeader>
         <ButtonGroup width="66">
-          <MonthButton border onClick={() => prevMonth()}>
-            <ChevronLeft
-              className="button prev-month"
-              color={themeContext.textColor}
-              size={20}
-            />
+          <MonthButton width={30} border onClick={() => prevMonth()}>
+            <ChevronLeft color={themeContext.textColor} size={14} />
           </MonthButton>
 
-          <MonthButton border onClick={() => nextMonth()}>
-            <ChevronRight
-              className="button next-month"
-              color={themeContext.textColor}
-              size={20}
-            />
+          <MonthButton width={30} border onClick={() => nextMonth()}>
+            <ChevronRight color={themeContext.textColor} size={14} />
           </MonthButton>
         </ButtonGroup>
       </CalendarHeader>
@@ -189,8 +181,6 @@ const MonthHeader = styled.div`
 `;
 
 const MonthButton = styled(Button)`
-  width: 30px;
-  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,12 +1,11 @@
 import { withTheme } from 'styled-components';
 import Button from './Button';
 import ButtonGroup from './ButtonGroup';
-import Switch from './Switch';
 
-const components = [Button, ButtonGroup, Switch];
+const components = [Button, ButtonGroup];
 
 components.forEach(component => {
   component = withTheme(component);
 });
 
-export { Button, ButtonGroup, Switch };
+export { Button, ButtonGroup };

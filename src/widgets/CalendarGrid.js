@@ -1,11 +1,25 @@
+import { useState, forwardRef, useRef } from 'react';
 import styled from 'styled-components';
 import moment from 'moment';
 import { Calendar as CalendarIcon } from 'react-feather';
+import { TaskBlock } from './index';
 
 const CalendarGrid = props => {
+  // Refs
+  const childRef = useRef();
+
+  // States
+  const [tasks, setTasks] = useState([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  // const [activedCol, setActivedCol] = useState(0);
+  const [taskElHeight, setTaskElHeight] = useState(0);
+  const [taskElTop, setTaskElTop] = useState(0);
+
+  // Props
   const { selectedDate, week } = props;
   const weekdaysShort = moment.weekdaysShort();
 
+  // Weeklist
   const wl = week.map((date, idx) => {
     return (
       <WeekCell
@@ -19,6 +33,7 @@ const CalendarGrid = props => {
     );
   });
 
+  // TimeLabel
   let ht = 0;
   const hours = Array(24)
     .fill(0)
@@ -37,12 +52,70 @@ const CalendarGrid = props => {
     </div>
   );
 
+  let tableElTop = 0;
+  const handleMouseDown = e => {
+    console.log('handleMouseDown', e);
+    const tableDOM = childRef.current;
+    const tableRect = tableDOM.getBoundingClientRect();
+    tableElTop = tableRect.top;
+
+    setIsDrawing(true);
+    setTaskElTop(e.clientY - tableElTop);
+    setTaskElHeight(0);
+  };
+
+  const handleMouseMove = e => {
+    if (!isDrawing) return;
+    const tableDOM = childRef.current;
+    const tableRect = tableDOM.getBoundingClientRect();
+    tableElTop = tableRect.top;
+
+    let mouseTop = e.clientY - tableElTop;
+    setTaskElHeight(Math.abs(mouseTop - taskElTop));
+  };
+
+  const handleMouseUp = e => {
+    setIsDrawing(false);
+    setTaskElTop(0);
+    setTasks([
+      ...tasks,
+      {
+        top: taskElTop,
+        height: taskElHeight,
+        startTime: 0,
+        endTime: 0,
+        title: 'hello world',
+        type: 'work',
+      },
+    ]);
+  };
+
+  // TimeTable
   const tableEl = week.map((col, index) => (
     <GridTableCol key={index}>
-      {hours.map((h, idx) => (
-        <GridTableCell key={idx} className="grid-table-cell"></GridTableCell>
-      ))}
+      {[
+        hours.map((h, idx) => (
+          <GridTableCell key={idx} className="grid-table-cell"></GridTableCell>
+        )),
+        tasks.map((t, idx) => (
+          <TaskBlock top={t.top} height={t.height} key={idx}></TaskBlock>
+        )),
+        isDrawing ? (
+          <TaskBlock top={taskElTop} height={taskElHeight} key={0} float />
+        ) : null,
+      ]}
     </GridTableCol>
+  ));
+
+  const GridTableRef = forwardRef((props, ref) => (
+    <GridTable
+      ref={ref}
+      onMouseDown={e => handleMouseDown(e)}
+      onMouseMove={e => handleMouseMove(e)}
+      onMouseUp={e => handleMouseUp(e)}
+    >
+      {tableEl}
+    </GridTable>
   ));
 
   return (
@@ -60,7 +133,7 @@ const CalendarGrid = props => {
       <GridContent>
         <GridContentScroll>
           <GridLabel>{labelEl}</GridLabel>
-          <GridTable>{tableEl}</GridTable>
+          <GridTableRef ref={childRef}></GridTableRef>
         </GridContentScroll>
       </GridContent>
     </GridContainer>
@@ -122,6 +195,18 @@ const WeekCell = styled.div`
   justify-content: center;
   border-right: 1px solid ${props => props.theme.borderColor};
   line-height: 26px;
+  h5 {
+    margin: 0;
+    font-weight: 600;
+    color: ${props => {
+      if (props.isActive) {
+        return props.theme.primaryColor;
+      } else if (props.isToday) {
+        return props.theme.hightlightColor;
+      }
+      return props.theme.textColor;
+    }};
+  }
   span {
     font-size: 14px;
     color: ${props => {
@@ -131,17 +216,6 @@ const WeekCell = styled.div`
         return props.theme.hightlightColor;
       }
       return props.theme.textColorSecondary;
-    }};
-  }
-  h5 {
-    margin: 0;
-    color: ${props => {
-      if (props.isActive) {
-        return props.theme.primaryColor;
-      } else if (props.isToday) {
-        return props.theme.hightlightColor;
-      }
-      return props.theme.textColor;
     }};
   }
 `;
@@ -195,6 +269,7 @@ const GridTable = styled.div`
 `;
 
 const GridTableCol = styled.div`
+  position: relative;
   flex: 1;
   &:first-child .grid-table-cell {
     border-left: 1px solid ${props => props.theme.borderColor};

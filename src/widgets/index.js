@@ -6,8 +6,12 @@ import CalendarList from './CalendarList';
 import CalendarType from './CalendarType';
 import NavBar from './NavBar';
 import SearchBar from './SearchBar';
+import BackForthSwitch from './BackForthSwitch';
+import TaskBlock from './TaskBlock';
+import TypeSwitch from './TypeSwitch';
 
 const widgets = [
+  BackForthSwitch,
   Calendar,
   CalendarCell,
   CalendarGrid,
@@ -15,6 +19,8 @@ const widgets = [
   CalendarType,
   NavBar,
   SearchBar,
+  TaskBlock,
+  TypeSwitch,
 ];
 
 widgets.forEach(widget => {
@@ -22,6 +28,7 @@ widgets.forEach(widget => {
 });
 
 export {
+  BackForthSwitch,
   Calendar,
   CalendarCell,
   CalendarGrid,
@@ -29,4 +36,6 @@ export {
   CalendarType,
   NavBar,
   SearchBar,
+  TaskBlock,
+  TypeSwitch,
 };

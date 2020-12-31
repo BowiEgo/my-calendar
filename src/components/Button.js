@@ -9,20 +9,29 @@ const Container = styled.button`
   height: ${props => props.height};
   border: ${props => (props.border ? '1px solid #e8e3f7' : 'none')};
   border-radius: ${props => (props.circle ? '50%' : '4px')};
-  background-color: transparent;
+  background-color: ${props => props.backgroundColor || 'transparent'};
+  font-weight: 600;
+  font-size: 12px;
   &:hover {
-    background-color: #efe9ff;
+    background-color: ${props => props.hoverColor || '#efe9ff'};
   }
 `;
 
 const Button = props => {
-  const { width, height, circle, border } = props;
+  const { width, height, circle, border, backgroundColor, hoverColor } = props;
 
   const w = props.width ? props.width + 'px' : 'auto';
   const h = props.height ? props.height + 'px' : w;
 
   return (
-    <Container width={w} height={h} circle={circle} border={border}>
+    <Container
+      width={w}
+      height={h}
+      circle={circle}
+      border={border}
+      backgroundColor={backgroundColor}
+      hoverColor={hoverColor}
+    >
       {props.children}
     </Container>
   );

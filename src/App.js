@@ -13,6 +13,7 @@ import {
 function App() {
   const [currentDate, setCurrentDate] = useState(null);
   const [week, setWeek] = useState([]);
+  const [type, setType] = useState('week');
 
   const childRef = useRef();
 
@@ -29,7 +30,7 @@ function App() {
       <AppBody>
         <AppContent>
           <NavBar></NavBar>
-          <CalendarType></CalendarType>
+          <CalendarType changeType={setType}></CalendarType>
           <CalendarGrid selectedDate={currentDate} week={week}></CalendarGrid>
         </AppContent>
         <CalendarBar>

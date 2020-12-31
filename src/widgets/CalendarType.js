@@ -1,11 +1,16 @@
 import styled from 'styled-components';
-import { Switch } from '../components';
+import { BackForthSwitch, TypeSwitch } from './index.js';
 
 const CalendarType = props => {
+  const handleChangeType = type => {
+    props.changeType(type);
+  };
+
   return (
     <Container>
       <h2>2020年 12月</h2>
-      <Switch></Switch>
+      <TypeSwitch changeType={handleChangeType}></TypeSwitch>
+      <BackForthSwitch></BackForthSwitch>
     </Container>
   );
 };
@@ -15,6 +20,7 @@ const Container = styled.div`
   margin-bottom: 1px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
 `;
 
 export default CalendarType;
