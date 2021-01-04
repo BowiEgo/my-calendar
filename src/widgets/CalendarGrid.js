@@ -1,19 +1,35 @@
-import { useState, forwardRef, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef } from 'react';
 import styled from 'styled-components';
 import moment from 'moment';
 import { Calendar as CalendarIcon } from 'react-feather';
 import { TaskBlock } from './index';
 
+function getRelativePoint(event, containerBCR, scrollTop) {
+  return {
+    x: event.clientX - containerBCR.x,
+    y: event.clientY - containerBCR.y + scrollTop,
+  };
+}
+
+function getRelatveTime(y, height, date) {
+  const minutes = parseInt(24 * 60 * (y / height));
+  return date.clone().add(minutes, 'minutes');
+}
+
 const CalendarGrid = props => {
   // Refs
-  const childRef = useRef();
+  const tableRef = useRef();
+  const contentRef = useRef();
 
   // States
   const [tasks, setTasks] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
-  // const [activedCol, setActivedCol] = useState(0);
+  const [tableRect, setTableRect] = useState(null);
   const [taskElHeight, setTaskElHeight] = useState(0);
   const [taskElTop, setTaskElTop] = useState(0);
+  const [activedCol, setActivedCol] = useState(0);
+  const [isResizing, setIsResizing] = useState(false);
+  const [startPoint, setStartPoint] = useState(null);
 
   // Props
   const { selectedDate, week } = props;
@@ -52,62 +68,76 @@ const CalendarGrid = props => {
     </div>
   );
 
-  let tableElTop = 0;
-  const handleMouseDown = e => {
-    console.log('handleMouseDown', e);
-    const tableDOM = childRef.current;
-    const tableRect = tableDOM.getBoundingClientRect();
-    tableElTop = tableRect.top;
+  // Mounted;
+  useEffect(() => {
+    console.log('mounted', tableRef, contentRef);
+    let BCR = tableRef.current.getBoundingClientRect();
+    setTableRect(BCR);
+  }, []);
 
+  function handleMouseDown(e) {
+    console.log('handleMouseDown', e, contentRef.current.scrollTop);
+    let point = getRelativePoint(e, tableRect, contentRef.current.scrollTop);
+    setStartPoint(point);
+    setActivedCol(parseInt(point.x / (tableRect.width / 7)));
     setIsDrawing(true);
-    setTaskElTop(e.clientY - tableElTop);
+    setTaskElTop(e.clientY - tableRect.top + contentRef.current.scrollTop);
     setTaskElHeight(0);
-  };
+  }
 
-  const handleMouseMove = e => {
+  function handleMouseMove(e) {
     if (!isDrawing) return;
-    const tableDOM = childRef.current;
-    const tableRect = tableDOM.getBoundingClientRect();
-    tableElTop = tableRect.top;
 
-    let mouseTop = e.clientY - tableElTop;
+    let mouseTop = e.clientY - tableRect.top;
     setTaskElHeight(Math.abs(mouseTop - taskElTop));
-  };
+    setIsResizing(true);
+  }
 
-  const handleMouseUp = e => {
+  function handleMouseUp(e) {
+    if (!isDrawing) return;
+    const tableHeight =
+      tableRef.current.children[0].children[0].getBoundingClientRect().height *
+      24;
+
+    let point = getRelativePoint(e, tableRect, contentRef.current.scrollTop);
+
+    let task = {
+      top: taskElTop,
+      height: taskElHeight,
+      date: week[activedCol],
+      startTime: getRelatveTime(startPoint.y, tableHeight, week[activedCol]),
+      endTime: getRelatveTime(point.y, tableHeight, week[activedCol]),
+      title: 'hello world',
+      type: 'work',
+    };
+
+    setTasks([...tasks, task]);
     setIsDrawing(false);
     setTaskElTop(0);
-    setTasks([
-      ...tasks,
-      {
-        top: taskElTop,
-        height: taskElHeight,
-        startTime: 0,
-        endTime: 0,
-        title: 'hello world',
-        type: 'work',
-      },
-    ]);
-  };
+    setIsResizing(false);
+  }
 
   // TimeTable
-  const tableEl = week.map((col, index) => (
+  const tableEl = week.map((date, index) => (
     <GridTableCol key={index}>
       {[
         hours.map((h, idx) => (
           <GridTableCell key={idx} className="grid-table-cell"></GridTableCell>
         )),
-        tasks.map((t, idx) => (
-          <TaskBlock top={t.top} height={t.height} key={idx}></TaskBlock>
-        )),
-        isDrawing ? (
+        tasks.map(
+          (t, idx) =>
+            t.date === date && (
+              <TaskBlock top={t.top} height={t.height} key={idx}></TaskBlock>
+            ),
+        ),
+        isDrawing & (index === activedCol) ? (
           <TaskBlock top={taskElTop} height={taskElHeight} key={0} float />
         ) : null,
       ]}
     </GridTableCol>
   ));
 
-  const GridTableRef = forwardRef((props, ref) => (
+  const InternalGridTable = forwardRef((props, ref) => (
     <GridTable
       ref={ref}
       onMouseDown={e => handleMouseDown(e)}
@@ -116,6 +146,15 @@ const CalendarGrid = props => {
     >
       {tableEl}
     </GridTable>
+  ));
+
+  const InternalContent = forwardRef((props, ref) => (
+    <GridContent ref={ref} isResizing={props.isResizing}>
+      <GridContentScroll>
+        <GridLabel>{labelEl}</GridLabel>
+        <InternalGridTable ref={tableRef}></InternalGridTable>
+      </GridContentScroll>
+    </GridContent>
   ));
 
   return (
@@ -130,12 +169,10 @@ const CalendarGrid = props => {
           {wl}
         </GridWeek>
       </GridWeekContainer>
-      <GridContent>
-        <GridContentScroll>
-          <GridLabel>{labelEl}</GridLabel>
-          <GridTableRef ref={childRef}></GridTableRef>
-        </GridContentScroll>
-      </GridContent>
+      <InternalContent
+        ref={contentRef}
+        isResizing={isResizing}
+      ></InternalContent>
     </GridContainer>
   );
 };
@@ -224,6 +261,7 @@ const GridContent = styled.div`
   overflow-y: scroll;
   width: calc(100% + 4px);
   display: flex;
+  cursor: ${props => (props.isResizing ? 'row-resize' : 'auto')};
   &:hover::-webkit-scrollbar-thumb {
     visibility: visible;
   }
