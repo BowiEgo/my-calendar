@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, forwardRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import moment from 'moment';
 import { Calendar as CalendarIcon } from 'react-feather';
@@ -21,15 +21,20 @@ const CalendarGrid = props => {
   const tableRef = useRef();
   const contentRef = useRef();
 
+  const tableRect = useRef();
+
+  const startPoint = useRef();
+  const activedCol = useRef(0);
+
   // States
   const [tasks, setTasks] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [tableRect, setTableRect] = useState(null);
+  // const [tableRect, setTableRect] = useState(null);
   const [taskElHeight, setTaskElHeight] = useState(0);
   const [taskElTop, setTaskElTop] = useState(0);
-  const [activedCol, setActivedCol] = useState(0);
+  // const [activedCol, setActivedCol] = useState(0);
   const [isResizing, setIsResizing] = useState(false);
-  const [startPoint, setStartPoint] = useState(null);
+  // const [startPoint, setStartPoint] = useState(null);
 
   // Props
   const { selectedDate, week } = props;
@@ -72,41 +77,59 @@ const CalendarGrid = props => {
   useEffect(() => {
     console.log('mounted', tableRef, contentRef);
     let BCR = tableRef.current.getBoundingClientRect();
-    setTableRect(BCR);
+    tableRect.current = BCR;
   }, []);
 
   function handleMouseDown(e) {
     console.log('handleMouseDown', e, contentRef.current.scrollTop);
-    let point = getRelativePoint(e, tableRect, contentRef.current.scrollTop);
-    setStartPoint(point);
-    setActivedCol(parseInt(point.x / (tableRect.width / 7)));
-    setIsDrawing(true);
-    setTaskElTop(e.clientY - tableRect.top + contentRef.current.scrollTop);
+    let point = getRelativePoint(
+      e,
+      tableRect.current,
+      contentRef.current.scrollTop,
+    );
+    startPoint.current = point;
+    activedCol.current = parseInt(point.x / (tableRect.current.width / 7));
+    // setStartPoint(point);
+    // setActivedCol(parseInt(point.x / (tableRect.current.width / 7)));
+    setIsDrawing(!isDrawing);
+    setTaskElTop(
+      e.clientY - tableRect.current.top + contentRef.current.scrollTop,
+    );
     setTaskElHeight(0);
   }
 
   function handleMouseMove(e) {
+    return;
     if (!isDrawing) return;
 
-    let mouseTop = e.clientY - tableRect.top;
+    let mouseTop = e.clientY - tableRect.current.top;
     setTaskElHeight(Math.abs(mouseTop - taskElTop));
     setIsResizing(true);
   }
 
   function handleMouseUp(e) {
+    return;
     if (!isDrawing) return;
     const tableHeight =
       tableRef.current.children[0].children[0].getBoundingClientRect().height *
       24;
 
-    let point = getRelativePoint(e, tableRect, contentRef.current.scrollTop);
+    let point = getRelativePoint(
+      e,
+      tableRect.current,
+      contentRef.current.scrollTop,
+    );
 
     let task = {
       top: taskElTop,
       height: taskElHeight,
-      date: week[activedCol],
-      startTime: getRelatveTime(startPoint.y, tableHeight, week[activedCol]),
-      endTime: getRelatveTime(point.y, tableHeight, week[activedCol]),
+      date: week[activedCol.current],
+      startTime: getRelatveTime(
+        startPoint.current.y,
+        tableHeight,
+        week[activedCol.current],
+      ),
+      endTime: getRelatveTime(point.y, tableHeight, week[activedCol.current]),
       title: 'hello world',
       type: 'work',
     };
@@ -137,25 +160,44 @@ const CalendarGrid = props => {
     </GridTableCol>
   ));
 
-  const InternalGridTable = forwardRef((props, ref) => (
-    <GridTable
-      ref={ref}
-      onMouseDown={e => handleMouseDown(e)}
-      onMouseMove={e => handleMouseMove(e)}
-      onMouseUp={e => handleMouseUp(e)}
-    >
-      {tableEl}
-    </GridTable>
-  ));
+  // const InternalGridTable = forwardRef((props, ref) => (
+  //   <GridTable
+  //     ref={ref}
+  //     onMouseDown={e => handleMouseDown(e)}
+  //     onMouseMove={e => handleMouseMove(e)}
+  //     onMouseUp={e => handleMouseUp(e)}
+  //   >
+  //     {tableEl}
+  //   </GridTable>
+  // ));
 
-  const InternalContent = forwardRef((props, ref) => (
-    <GridContent ref={ref} isResizing={props.isResizing}>
-      <GridContentScroll>
-        <GridLabel>{labelEl}</GridLabel>
-        <InternalGridTable ref={tableRef}></InternalGridTable>
-      </GridContentScroll>
-    </GridContent>
-  ));
+  // const InternalContent = forwardRef((props, ref) => (
+  //   <GridContent ref={ref} isResizing={props.isResizing}>
+  //     <GridContentScroll>
+  //       <GridLabel>{labelEl}</GridLabel>
+  //       <InternalGridTable ref={tableRef}></InternalGridTable>
+  //     </GridContentScroll>
+  //   </GridContent>
+  // ));
+
+  // const InternalGridTable = (
+  //   <GridTable
+  //     onMouseDown={e => handleMouseDown(e)}
+  //     onMouseMove={e => handleMouseMove(e)}
+  //     onMouseUp={e => handleMouseUp(e)}
+  //   >
+  //     {tableEl}
+  //   </GridTable>
+  // );
+
+  // const InternalContent = (
+  //   <GridContent isResizing={props.isResizing}>
+  //     <GridContentScroll>
+  //       <GridLabel>{labelEl}</GridLabel>
+  //       <InternalGridTable></InternalGridTable>
+  //     </GridContentScroll>
+  //   </GridContent>
+  // );
 
   return (
     <GridContainer>
@@ -169,12 +211,37 @@ const CalendarGrid = props => {
           {wl}
         </GridWeek>
       </GridWeekContainer>
-      <InternalContent
-        ref={contentRef}
-        isResizing={isResizing}
-      ></InternalContent>
+      <GridContentScroll isResizing={isResizing}>
+        <GridContent ref={contentRef}>
+          <GridLabel>{labelEl}</GridLabel>
+          <GridTable
+            ref={tableRef}
+            onMouseDown={e => handleMouseDown(e)}
+            onMouseMove={e => handleMouseMove(e)}
+            onMouseUp={e => handleMouseUp(e)}
+          >
+            {tableEl}
+          </GridTable>
+        </GridContent>
+      </GridContentScroll>
     </GridContainer>
   );
+
+  // return (
+  //   <GridContainer>
+  //     <GridWeekContainer>
+  //       <GridWeek>
+  //         <WeekLabelContainer>
+  //           <WeekLabel>
+  //             <CalendarIcon color="grey" size="20"></CalendarIcon>
+  //           </WeekLabel>
+  //         </WeekLabelContainer>
+  //         {wl}
+  //       </GridWeek>
+  //     </GridWeekContainer>
+  //     <InternalContent isResizing={isResizing}></InternalContent>
+  //   </GridContainer>
+  // );
 };
 
 const GridContainer = styled.div`
@@ -258,6 +325,11 @@ const WeekCell = styled.div`
 `;
 
 const GridContent = styled.div`
+  display: flex;
+  flex: 1;
+`;
+
+const GridContentScroll = styled.div`
   overflow-y: scroll;
   width: calc(100% + 4px);
   display: flex;
@@ -265,11 +337,6 @@ const GridContent = styled.div`
   &:hover::-webkit-scrollbar-thumb {
     visibility: visible;
   }
-`;
-
-const GridContentScroll = styled.div`
-  display: flex;
-  flex: 1;
 `;
 
 const GridLabel = styled.div`
