@@ -3,39 +3,12 @@ import styled from 'styled-components';
 import moment from 'moment';
 import { Calendar as CalendarIcon } from 'react-feather';
 import { TaskBlock } from './index';
+import { _reqFrame } from '../utils/reqFrame';
+import { cloneDeep } from 'lodash';
 
-function getRelativePoint(event, containerBCR, scrollTop) {
-  return {
-    x: event.clientX - containerBCR.x,
-    y: event.clientY - containerBCR.y + scrollTop,
-  };
-}
-
-function getRelatveTime(y, height, date) {
-  const minutes = parseInt(24 * 60 * (y / height));
-  return date.clone().add(minutes, 'minutes');
-}
+let bid = 0;
 
 const CalendarGrid = props => {
-  // Refs
-  const tableRef = useRef();
-  const contentRef = useRef();
-
-  const tableRect = useRef();
-
-  const startPoint = useRef();
-  const activedCol = useRef(0);
-
-  // States
-  const [tasks, setTasks] = useState([]);
-  const [isDrawing, setIsDrawing] = useState(false);
-  // const [tableRect, setTableRect] = useState(null);
-  const [taskElHeight, setTaskElHeight] = useState(0);
-  const [taskElTop, setTaskElTop] = useState(0);
-  // const [activedCol, setActivedCol] = useState(0);
-  const [isResizing, setIsResizing] = useState(false);
-  // const [startPoint, setStartPoint] = useState(null);
-
   // Props
   const { selectedDate, week } = props;
   const weekdaysShort = moment.weekdaysShort();
@@ -73,71 +46,148 @@ const CalendarGrid = props => {
     </div>
   );
 
+  // Refs
+  const tableRef = useRef();
+  const scrollRef = useRef();
+  const tableRect = useRef();
+  const activedCol = useRef(0);
+  const activedBlockIndex = useRef(-1);
+  const taskTemp = useRef({
+    date: null,
+    startTime: null,
+    endTime: null,
+    title: '无标题',
+    type: 'work',
+    shadow: true,
+  });
+
+  // States
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [taskElTop, setTaskElTop] = useState(0);
+  const [taskElHeight, setTaskElHeight] = useState(0);
+  const [taskBlockList, setTaskBlockList] = useState([]);
+
   // Mounted;
   useEffect(() => {
-    console.log('mounted', tableRef, contentRef);
     let BCR = tableRef.current.getBoundingClientRect();
     tableRect.current = BCR;
   }, []);
 
+  // Watch States
+  useEffect(() => {
+    changeStartTime();
+    changeEndTime();
+  }, [taskElTop]);
+
+  useEffect(() => {
+    // handle resizing block
+    changeEndTime();
+    setIsResizing(true);
+  }, [taskElHeight]);
+
+  useEffect(() => {
+    setTaskElTop(0);
+    setTaskElHeight(0);
+    setIsResizing(false);
+    taskTemp.current.startTime = null;
+    taskTemp.current.endTime = null;
+    taskTemp.current.date = null;
+  }, [taskBlockList]);
+
+  function changeStartTime() {
+    let startTime = getRelatveTime(
+      taskElTop,
+      tableRef.current,
+      week[activedCol.current],
+    );
+    taskTemp.current.startTime = startTime;
+  }
+
+  function changeEndTime() {
+    let endTime = getRelatveTime(
+      taskElTop + taskElHeight,
+      tableRef.current,
+      week[activedCol.current],
+    );
+    taskTemp.current.endTime = endTime;
+  }
+
   function handleMouseDown(e) {
-    console.log('handleMouseDown', e, contentRef.current.scrollTop);
-    let point = getRelativePoint(
+    let startPoint = getRelativePoint(
       e,
       tableRect.current,
-      contentRef.current.scrollTop,
+      scrollRef.current.scrollTop,
     );
-    startPoint.current = point;
-    activedCol.current = parseInt(point.x / (tableRect.current.width / 7));
-    // setStartPoint(point);
-    // setActivedCol(parseInt(point.x / (tableRect.current.width / 7)));
-    setIsDrawing(!isDrawing);
-    setTaskElTop(
-      e.clientY - tableRect.current.top + contentRef.current.scrollTop,
-    );
-    setTaskElHeight(0);
+
+    activedCol.current = parseInt(startPoint.x / (tableRect.current.width / 7));
+    taskTemp.current.date = taskTemp.current.date || week[activedCol.current];
+
+    setTaskElTop(startPoint.y);
+    setIsDrawing(true);
   }
 
   function handleMouseMove(e) {
-    return;
-    if (!isDrawing) return;
+    if (isDrawing) {
+      let mouseTop = e.nativeEvent.layerY;
+      let height = Math.abs(mouseTop - taskElTop);
 
-    let mouseTop = e.clientY - tableRect.current.top;
-    setTaskElHeight(Math.abs(mouseTop - taskElTop));
-    setIsResizing(true);
+      // if (height > 20) {
+
+      setTaskElHeight(height);
+      // }
+    }
+
+    if (isMoving) {
+      setTaskElTop(taskElTop + e.movementY);
+    }
   }
 
   function handleMouseUp(e) {
-    return;
-    if (!isDrawing) return;
-    const tableHeight =
-      tableRef.current.children[0].children[0].getBoundingClientRect().height *
-      24;
+    if (isDrawing) {
+      setTaskBlockList([
+        ...taskBlockList,
+        cloneDeep({
+          id: ++bid,
+          top: taskElTop,
+          height: taskElHeight,
+          task: taskTemp.current,
+        }),
+      ]);
 
-    let point = getRelativePoint(
-      e,
-      tableRect.current,
-      contentRef.current.scrollTop,
+      setIsDrawing(false);
+    }
+
+    if (isMoving) {
+      setIsMoving(false);
+
+      let newBlockList = [...taskBlockList];
+
+      newBlockList[activedBlockIndex.current] = {
+        top: taskElTop,
+        height: taskElHeight,
+        task: cloneDeep(taskTemp.current),
+      };
+
+      setTaskBlockList(newBlockList);
+    }
+  }
+
+  function handleBlockActived(e, task) {
+    activedBlockIndex.current = taskBlockList.findIndex(
+      block => block.task === task,
     );
 
-    let task = {
-      top: taskElTop,
-      height: taskElHeight,
-      date: week[activedCol.current],
-      startTime: getRelatveTime(
-        startPoint.current.y,
-        tableHeight,
-        week[activedCol.current],
-      ),
-      endTime: getRelatveTime(point.y, tableHeight, week[activedCol.current]),
-      title: 'hello world',
-      type: 'work',
-    };
+    let activedBlock = taskBlockList[activedBlockIndex.current];
 
-    setTasks([...tasks, task]);
-    setIsDrawing(false);
-    setTaskElTop(0);
-    setIsResizing(false);
+    taskTemp.current = cloneDeep(activedBlock.task);
+    setTaskElTop(activedBlock.top);
+    setTaskElHeight(activedBlock.height);
+    setIsMoving(true);
+    console.log('taskTemp', taskTemp);
+    // let offsetY = e.nativeEvent.layerY - mouseOrigin.current.y;
+    // setTop(topOrigin.current + offsetY);
   }
 
   // TimeTable
@@ -147,57 +197,30 @@ const CalendarGrid = props => {
         hours.map((h, idx) => (
           <GridTableCell key={idx} className="grid-table-cell"></GridTableCell>
         )),
-        tasks.map(
-          (t, idx) =>
-            t.date === date && (
-              <TaskBlock top={t.top} height={t.height} key={idx}></TaskBlock>
+        taskBlockList.map(
+          (block, idx) =>
+            block.task.date.isSame(date) && (
+              <TaskBlock
+                task={block.task}
+                key={idx}
+                top={block.top}
+                height={block.height}
+                onMouseDown={(e, task) => handleBlockActived(e, task)}
+              ></TaskBlock>
             ),
         ),
-        isDrawing & (index === activedCol) ? (
-          <TaskBlock top={taskElTop} height={taskElHeight} key={0} float />
+        (isDrawing || isMoving) & (index === activedCol.current) ? (
+          <TaskBlock
+            task={taskTemp.current}
+            key={-1}
+            top={taskElTop}
+            height={taskElHeight}
+            shadow
+          />
         ) : null,
       ]}
     </GridTableCol>
   ));
-
-  // const InternalGridTable = forwardRef((props, ref) => (
-  //   <GridTable
-  //     ref={ref}
-  //     onMouseDown={e => handleMouseDown(e)}
-  //     onMouseMove={e => handleMouseMove(e)}
-  //     onMouseUp={e => handleMouseUp(e)}
-  //   >
-  //     {tableEl}
-  //   </GridTable>
-  // ));
-
-  // const InternalContent = forwardRef((props, ref) => (
-  //   <GridContent ref={ref} isResizing={props.isResizing}>
-  //     <GridContentScroll>
-  //       <GridLabel>{labelEl}</GridLabel>
-  //       <InternalGridTable ref={tableRef}></InternalGridTable>
-  //     </GridContentScroll>
-  //   </GridContent>
-  // ));
-
-  // const InternalGridTable = (
-  //   <GridTable
-  //     onMouseDown={e => handleMouseDown(e)}
-  //     onMouseMove={e => handleMouseMove(e)}
-  //     onMouseUp={e => handleMouseUp(e)}
-  //   >
-  //     {tableEl}
-  //   </GridTable>
-  // );
-
-  // const InternalContent = (
-  //   <GridContent isResizing={props.isResizing}>
-  //     <GridContentScroll>
-  //       <GridLabel>{labelEl}</GridLabel>
-  //       <InternalGridTable></InternalGridTable>
-  //     </GridContentScroll>
-  //   </GridContent>
-  // );
 
   return (
     <GridContainer>
@@ -211,13 +234,13 @@ const CalendarGrid = props => {
           {wl}
         </GridWeek>
       </GridWeekContainer>
-      <GridContentScroll isResizing={isResizing}>
-        <GridContent ref={contentRef}>
+      <GridContentScroll isResizing={isResizing} ref={scrollRef}>
+        <GridContent>
           <GridLabel>{labelEl}</GridLabel>
           <GridTable
             ref={tableRef}
             onMouseDown={e => handleMouseDown(e)}
-            onMouseMove={e => handleMouseMove(e)}
+            onMouseMove={e => _reqFrame(() => handleMouseMove(e))}
             onMouseUp={e => handleMouseUp(e)}
           >
             {tableEl}
@@ -226,23 +249,22 @@ const CalendarGrid = props => {
       </GridContentScroll>
     </GridContainer>
   );
-
-  // return (
-  //   <GridContainer>
-  //     <GridWeekContainer>
-  //       <GridWeek>
-  //         <WeekLabelContainer>
-  //           <WeekLabel>
-  //             <CalendarIcon color="grey" size="20"></CalendarIcon>
-  //           </WeekLabel>
-  //         </WeekLabelContainer>
-  //         {wl}
-  //       </GridWeek>
-  //     </GridWeekContainer>
-  //     <InternalContent isResizing={isResizing}></InternalContent>
-  //   </GridContainer>
-  // );
 };
+
+function getRelativePoint(event, containerBCR, scrollTop) {
+  return {
+    x: event.clientX - containerBCR.x,
+    y: event.clientY - containerBCR.y + scrollTop,
+  };
+}
+
+function getRelatveTime(y, container, date) {
+  if (!date) return;
+  const minutes = parseInt(
+    24 * 60 * (y / container.getBoundingClientRect().height),
+  );
+  return date.clone().add(minutes, 'minutes');
+}
 
 const GridContainer = styled.div`
   display: flex;
@@ -324,19 +346,23 @@ const WeekCell = styled.div`
   }
 `;
 
-const GridContent = styled.div`
-  display: flex;
-  flex: 1;
-`;
-
 const GridContentScroll = styled.div`
   overflow-y: scroll;
   width: calc(100% + 4px);
   display: flex;
+  flex: 1 1 auto;
+  height: 0px;
   cursor: ${props => (props.isResizing ? 'row-resize' : 'auto')};
   &:hover::-webkit-scrollbar-thumb {
     visibility: visible;
   }
+  align-items: flex-start; // 使子元素撑满搞度
+`;
+
+const GridContent = styled.div`
+  display: flex;
+  flex: 1;
+  min-height: min-content;
 `;
 
 const GridLabel = styled.div`
