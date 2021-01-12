@@ -7,7 +7,7 @@ import CalendarType from './CalendarType';
 import NavBar from './NavBar';
 import SearchBar from './SearchBar';
 import BackForthSwitch from './BackForthSwitch';
-import TaskBlock from './TaskBlock';
+import { TaskBlock, TaskBlockSolid } from './TaskBlock';
 import TypeSwitch from './TypeSwitch';
 
 const widgets = [
@@ -20,6 +20,7 @@ const widgets = [
   NavBar,
   SearchBar,
   TaskBlock,
+  TaskBlockSolid,
   TypeSwitch,
 ];
 
@@ -37,5 +38,6 @@ export {
   NavBar,
   SearchBar,
   TaskBlock,
+  TaskBlockSolid,
   TypeSwitch,
 };

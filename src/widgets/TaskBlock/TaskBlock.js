@@ -1,36 +1,18 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
-import { _reqFrame } from '../utils/reqFrame';
 
 const TaskBlock = props => {
   // Props
-  const { task, top, height, shadow } = props;
+  const { task, top, height, shadow, disabled = false, onPutDown } = props;
   const { title, type, startTime, endTime } = task;
 
+  // States
   const [isDragging, setIsDragging] = useState(false);
-  const [disabled, setDisabled] = useState(false);
 
-  function handleMouseDown(e) {
-    e.stopPropagation();
-    // setIsDragging(true);
-    props.onMouseDown(e, task);
-    // mouseOrigin.current = {
-    //   x: e.nativeEvent.layerX,
-    //   y: e.nativeEvent.layerY,
-    // };
-  }
-
-  function handleMouseMove(e) {
-    if (!isDragging) return;
-    console.log('move-1');
-    props.onMouseMove(e, task);
-    setDisabled(true);
-  }
-
-  function handleMouseUp(e) {
-    setIsDragging(false);
-    setDisabled(false);
-  }
+  const handleMouseUp = () => {
+    console.log('handleMouseUp');
+    onPutDown && onPutDown(task);
+  };
 
   return (
     <Container
@@ -38,9 +20,9 @@ const TaskBlock = props => {
       height={height}
       shadow={shadow}
       disabled={disabled}
-      onMouseDown={e => handleMouseDown(e)}
-      // onMouseMove={e => _reqFrame(() => handleMouseMove(e))}
-      // onMouseUp={e => handleMouseUp(e)}
+      onMouseUp={handleMouseUp}
+      // onClick={e => onClick(e)}
+      // onMouseMove={e => onMouseMove(e)}
     >
       {height > 50 && (
         <InnerBlock>
@@ -59,9 +41,6 @@ const Container = styled.div`
   left: 4px;
   width: calc(100% - 8px);
   height: ${props => props.height + 'px'};
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   background-color: #d6ebfd;
   font-size: 12px;
   color: blue;
@@ -76,7 +55,11 @@ const Container = styled.div`
 `;
 
 const InnerBlock = styled.div`
+  height: 100%;
   padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 `;
 
 export default TaskBlock;

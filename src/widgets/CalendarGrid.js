@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import moment from 'moment';
 import { Calendar as CalendarIcon } from 'react-feather';
-import { TaskBlock } from './index';
+import { TaskBlock, TaskBlockSolid } from './index';
 import { _reqFrame } from '../utils/reqFrame';
 import { cloneDeep } from 'lodash';
 
@@ -50,6 +50,7 @@ const CalendarGrid = props => {
   const tableRef = useRef();
   const scrollRef = useRef();
   const tableRect = useRef();
+  const scrollTopOld = useRef(0);
   const activedCol = useRef(0);
   const activedBlockIndex = useRef(-1);
   const taskTemp = useRef({
@@ -69,6 +70,24 @@ const CalendarGrid = props => {
   const [taskElHeight, setTaskElHeight] = useState(0);
   const [taskBlockList, setTaskBlockList] = useState([]);
 
+  const changeStartTime = useCallback(() => {
+    let startTime = getRelatveTime(
+      taskElTop,
+      tableRef.current,
+      week[activedCol.current],
+    );
+    taskTemp.current.startTime = startTime;
+  }, [taskElTop, week]);
+
+  const changeEndTime = useCallback(() => {
+    let endTime = getRelatveTime(
+      taskElTop + taskElHeight,
+      tableRef.current,
+      week[activedCol.current],
+    );
+    taskTemp.current.endTime = endTime;
+  }, [taskElTop, taskElHeight, week]);
+
   // Mounted;
   useEffect(() => {
     let BCR = tableRef.current.getBoundingClientRect();
@@ -79,13 +98,13 @@ const CalendarGrid = props => {
   useEffect(() => {
     changeStartTime();
     changeEndTime();
-  }, [taskElTop]);
+  }, [taskElTop, changeStartTime, changeEndTime]);
 
   useEffect(() => {
     // handle resizing block
     changeEndTime();
     setIsResizing(true);
-  }, [taskElHeight]);
+  }, [taskElHeight, changeEndTime]);
 
   useEffect(() => {
     setTaskElTop(0);
@@ -96,25 +115,7 @@ const CalendarGrid = props => {
     taskTemp.current.date = null;
   }, [taskBlockList]);
 
-  function changeStartTime() {
-    let startTime = getRelatveTime(
-      taskElTop,
-      tableRef.current,
-      week[activedCol.current],
-    );
-    taskTemp.current.startTime = startTime;
-  }
-
-  function changeEndTime() {
-    let endTime = getRelatveTime(
-      taskElTop + taskElHeight,
-      tableRef.current,
-      week[activedCol.current],
-    );
-    taskTemp.current.endTime = endTime;
-  }
-
-  function handleMouseDown(e) {
+  const handleMouseDown = e => {
     let startPoint = getRelativePoint(
       e,
       tableRect.current,
@@ -126,9 +127,13 @@ const CalendarGrid = props => {
 
     setTaskElTop(startPoint.y);
     setIsDrawing(true);
-  }
+  };
 
-  function handleMouseMove(e) {
+  const handleMouseMove = e => {
+    // console.log('22222', e.target);
+    e.stopPropagation();
+    e.preventDefault();
+    // e.nativeEvent.stopImmediatePropagation();
     if (isDrawing) {
       let mouseTop = e.nativeEvent.layerY;
       let height = Math.abs(mouseTop - taskElTop);
@@ -142,9 +147,18 @@ const CalendarGrid = props => {
     if (isMoving) {
       setTaskElTop(taskElTop + e.movementY);
     }
-  }
+  };
 
-  function handleMouseUp(e) {
+  const handleScroll = e => {
+    if (isMoving) {
+      let scrollTopOffset = scrollRef.current.scrollTop - scrollTopOld.current;
+      setTaskElTop(taskElTop + scrollTopOffset);
+      scrollTopOld.current = scrollRef.current.scrollTop;
+    }
+  };
+
+  const handleMouseUp = e => {
+    console.log('handleMouseUp');
     if (isDrawing) {
       setTaskBlockList([
         ...taskBlockList,
@@ -152,6 +166,7 @@ const CalendarGrid = props => {
           id: ++bid,
           top: taskElTop,
           height: taskElHeight,
+          disabled: false,
           task: taskTemp.current,
         }),
       ]);
@@ -159,36 +174,43 @@ const CalendarGrid = props => {
       setIsDrawing(false);
     }
 
-    if (isMoving) {
-      setIsMoving(false);
+    isMoving && setIsMoving(false);
+  };
 
-      let newBlockList = [...taskBlockList];
+  const handleBlockPickUp = useCallback(
+    task => {
+      console.log('handleBlockPickUp', task);
+      activedBlockIndex.current = taskBlockList.findIndex(
+        block => block.task === task,
+      );
 
-      newBlockList[activedBlockIndex.current] = {
-        top: taskElTop,
-        height: taskElHeight,
-        task: cloneDeep(taskTemp.current),
-      };
+      let activedBlock = taskBlockList[activedBlockIndex.current];
 
-      setTaskBlockList(newBlockList);
-    }
-  }
+      taskTemp.current = cloneDeep(activedBlock.task);
+      activedCol.current = taskTemp.current.date.day();
+      setTaskElTop(activedBlock.top);
+      setTaskElHeight(activedBlock.height);
 
-  function handleBlockActived(e, task) {
-    activedBlockIndex.current = taskBlockList.findIndex(
-      block => block.task === task,
-    );
+      setIsMoving(true);
+    },
+    [taskBlockList],
+  );
 
-    let activedBlock = taskBlockList[activedBlockIndex.current];
+  const handleBlockPutDown = task => {
+    console.log('handleBlockPutDown', task, taskTemp.current);
 
-    taskTemp.current = cloneDeep(activedBlock.task);
-    setTaskElTop(activedBlock.top);
-    setTaskElHeight(activedBlock.height);
-    setIsMoving(true);
-    console.log('taskTemp', taskTemp);
-    // let offsetY = e.nativeEvent.layerY - mouseOrigin.current.y;
-    // setTop(topOrigin.current + offsetY);
-  }
+    let newBlockList = [...taskBlockList];
+
+    newBlockList[activedBlockIndex.current] = {
+      top: taskElTop,
+      height: taskElHeight,
+      disabled: false,
+      task: cloneDeep(taskTemp.current),
+    };
+
+    setTaskBlockList(newBlockList);
+    setIsMoving(false);
+  };
 
   // TimeTable
   const tableEl = week.map((date, index) => (
@@ -200,13 +222,14 @@ const CalendarGrid = props => {
         taskBlockList.map(
           (block, idx) =>
             block.task.date.isSame(date) && (
-              <TaskBlock
+              <TaskBlockSolid
                 task={block.task}
                 key={idx}
                 top={block.top}
                 height={block.height}
-                onMouseDown={(e, task) => handleBlockActived(e, task)}
-              ></TaskBlock>
+                disabled={block.disabled}
+                onPickUp={task => handleBlockPickUp(task)}
+              ></TaskBlockSolid>
             ),
         ),
         (isDrawing || isMoving) & (index === activedCol.current) ? (
@@ -215,6 +238,7 @@ const CalendarGrid = props => {
             key={-1}
             top={taskElTop}
             height={taskElHeight}
+            onPutDown={task => handleBlockPutDown(task)}
             shadow
           />
         ) : null,
@@ -234,7 +258,11 @@ const CalendarGrid = props => {
           {wl}
         </GridWeek>
       </GridWeekContainer>
-      <GridContentScroll isResizing={isResizing} ref={scrollRef}>
+      <GridContentScroll
+        isResizing={isResizing}
+        ref={scrollRef}
+        onScroll={e => handleScroll(e)}
+      >
         <GridContent>
           <GridLabel>{labelEl}</GridLabel>
           <GridTable
