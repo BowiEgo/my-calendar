@@ -1,7 +1,7 @@
 import { withTheme } from 'styled-components';
 import Calendar from './Calendar';
 import CalendarCell from './CalendarCell';
-import CalendarGrid from './CalendarGrid';
+import { CalendarGrid, CalendarGridTable } from './CalendarGrid';
 import CalendarList from './CalendarList';
 import CalendarType from './CalendarType';
 import NavBar from './NavBar';
@@ -15,6 +15,7 @@ const widgets = [
   Calendar,
   CalendarCell,
   CalendarGrid,
+  CalendarGridTable,
   CalendarList,
   CalendarType,
   NavBar,
@@ -33,6 +34,7 @@ export {
   Calendar,
   CalendarCell,
   CalendarGrid,
+  CalendarGridTable,
   CalendarList,
   CalendarType,
   NavBar,

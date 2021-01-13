@@ -11,7 +11,7 @@ import { ChevronLeft, ChevronRight } from 'react-feather';
 import { Button, ButtonGroup } from '../components';
 import { CalendarCell } from '../widgets';
 
-const CalendarComponent = (props, ref) => {
+const Calendar = (props, ref) => {
   const themeContext = useContext(ThemeContext);
 
   const [startOfMonth, setStartOfMonth] = useState(
@@ -211,4 +211,4 @@ const Th = styled(Td)`
   color: ${props => props.theme.textColorSecondary};
 `;
 
-export default forwardRef(CalendarComponent);
+export default forwardRef(Calendar);

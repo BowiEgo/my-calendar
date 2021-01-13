@@ -15,14 +15,14 @@ function App() {
   const [week, setWeek] = useState([]);
   const [type, setType] = useState('week');
 
-  const childRef = useRef();
+  const calendarElRef = useRef();
 
   const prevWeek = () => {
-    childRef.current.prevWeek();
+    calendarElRef.current.prevWeek();
   };
 
   const nextWeek = () => {
-    childRef.current.nextWeek();
+    calendarElRef.current.nextWeek();
   };
 
   return (
@@ -63,7 +63,7 @@ function App() {
           </UserComp>
           <ScrollContainer>
             <Calendar
-              ref={childRef}
+              ref={calendarElRef}
               change={setCurrentDate}
               changeWeek={setWeek}
             ></Calendar>

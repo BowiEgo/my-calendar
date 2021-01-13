@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useLongPress from '../../utils/useLongPress';
 import TaskBlock from './TaskBlock';
 
 const TaskBlockSolid = props => {
+  const { task, top, actived, moving } = props;
+
+  const onPressStart = e => {
+    props.onActive(task);
+  };
+
+  const onPressEnd = e => {
+    props.onDisactive(task);
+  };
+
   const onLongPressStart = e => {
-    console.log('longpress is start', e);
-    props.onPickUp(props.task);
+    console.log('longpress is start', e, moving);
+    // !moving && props.onPickUp(task);
     // e.stopPropagation();
     // setDisabled(true);
-    // console.log('longpress is triggered', e);
   };
 
   const onLongPressEnd = e => {
@@ -20,7 +29,7 @@ const TaskBlockSolid = props => {
 
   const onMouseMove = e => {
     e.stopPropagation();
-    // console.log('onMouseMove');
+    console.log('onMouseMove', e);
     // e.nativeEvent.stopImmediatePropagation();
   };
 
@@ -32,12 +41,16 @@ const TaskBlockSolid = props => {
   const defaultOptions = {
     // shouldPreventDefault: true,
     stopPropagation: true,
+    isCapture: true,
     delay: 500,
   };
 
   const { longPressTriggered, bind: longPressEvent } = useLongPress(
+    onPressStart,
+    onPressEnd,
     onLongPressStart,
     onLongPressEnd,
+    onClick,
     defaultOptions,
   );
 

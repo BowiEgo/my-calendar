@@ -51,15 +51,19 @@ const CellContainer = styled.div`
   height: 100%;
 `;
 
-const Cell = styled.div`
+const Cell = styled.div.attrs(props => ({
+  style: {
+    backgroundColor: props.backgroundColor,
+    color: props.color,
+  },
+}))`
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background-color: ${props => props.backgroundColor};
-  color: ${props => props.color};
+
   font-family: 'Roboto';
 `;
 
