@@ -1,45 +1,52 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import useLongPress from '../../utils/useLongPress';
 import TaskBlock from './TaskBlock';
 
 const TaskBlockSolid = props => {
-  const { task, top, actived, moving } = props;
+  const {
+    id,
+    top,
+    actived,
+    onActive,
+    onDisactive,
+    onPickUp,
+    onPutDown,
+  } = props;
+
+  const moving = useRef(false);
+
+  useEffect(() => {
+    moving.current = true;
+  }, [top]);
+
+  useEffect(() => {
+    if (!actived) {
+      moving.current = false;
+    }
+  }, [actived]);
 
   const onPressStart = e => {
-    props.onActive(task);
+    onActive(id);
   };
 
   const onPressEnd = e => {
-    props.onDisactive(task);
+    onDisactive(id);
+    moving.current = false;
   };
 
   const onLongPressStart = e => {
-    console.log('longpress is start', e, moving);
-    // !moving && props.onPickUp(task);
-    // e.stopPropagation();
-    // setDisabled(true);
+    !moving.current && onPickUp(id);
   };
 
   const onLongPressEnd = e => {
-    // e.stopPropagation();
-    // setDisabled(false);
-    // props.onPutDown && props.onPutDown(task);
-    console.log('longpress is ended', e);
-  };
-
-  const onMouseMove = e => {
-    e.stopPropagation();
-    console.log('onMouseMove', e);
-    // e.nativeEvent.stopImmediatePropagation();
+    moving.current = false;
   };
 
   const onClick = e => {
-    // e.stopPropagation();
     console.log('click is triggered', e, props);
   };
 
   const defaultOptions = {
-    // shouldPreventDefault: true,
     stopPropagation: true,
     isCapture: true,
     delay: 500,
@@ -56,7 +63,7 @@ const TaskBlockSolid = props => {
 
   return (
     <div {...longPressEvent}>
-      <TaskBlock {...props}></TaskBlock>
+      <TaskBlock {...props} moving={moving.current}></TaskBlock>
     </div>
   );
 };

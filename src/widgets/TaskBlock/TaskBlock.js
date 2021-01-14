@@ -1,23 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import styled from 'styled-components';
 
-const TaskBlock = props => {
-  // Props
-  const {
-    task,
-    top,
-    height,
-    shadow,
-    resizing,
-    moving,
-    disabled = false,
-    onPutDown,
-  } = props;
-  const { title, type, startTime, endTime } = task;
-
+const TaskBlock = ({
+  id = -1,
+  date,
+  title = '无标题',
+  type = 'work',
+  top,
+  height,
+  outerHeight,
+  shadow,
+  moving,
+  resizing,
+  disabled = false,
+  onPutDown,
+  finishMoving,
+  finishResizing,
+  onFinish,
+}) => {
   // States
   const [isDragging, setIsDragging] = useState(false);
-  const [cursor, setCursor] = useState('auto');
+
+  const startTime = useMemo(() => getRelatveTime(top, outerHeight, date), [
+    top,
+    outerHeight,
+    date,
+  ]);
+
+  const endTime = useMemo(
+    () => getRelatveTime(top + height, outerHeight, date),
+    [top, height, outerHeight, date],
+  );
+
+  const cursor = useMemo(() => {
+    if (resizing) return 'ns-resize';
+    if (moving) return 'move';
+  }, [resizing, moving]);
 
   const handleMouseDown = e => {
     if (e) {
@@ -27,23 +45,19 @@ const TaskBlock = props => {
   };
 
   const handleMouseUp = e => {
-    console.log('handleMouseUp-resizing', resizing);
     if (e) {
       e.stopPropagation();
       e.preventDefault();
     }
-    if (resizing) {
-      props.finishResizing();
+    if (moving) {
+      finishMoving();
     }
-    // onPutDown && onPutDown(task);
+    if (resizing) {
+      finishResizing();
+    }
   };
 
-  // const handleClick = e => {
-  //   console.log('handleClick', e);
-  // };
-
   const handleFinishMouseUp = e => {
-    console.log('handleMouseUp-resizing', resizing);
     e.stopPropagation();
     e.preventDefault();
     handleMouseUp();
@@ -52,15 +66,8 @@ const TaskBlock = props => {
   const handleFinish = e => {
     e.stopPropagation();
     e.preventDefault();
-    console.log('finish', e);
-    props.onFinish();
+    onFinish();
   };
-
-  useEffect(() => {
-    if (resizing) {
-      setCursor('ns-resize');
-    }
-  }, [resizing]);
 
   return (
     <Container
@@ -68,18 +75,17 @@ const TaskBlock = props => {
       height={height}
       shadow={shadow}
       disabled={disabled}
+      cursor={cursor}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
-      moving={moving}
       // onClick={handleClick}
-      cursor={cursor}
       // onClick={e => onClick(e)}
       // onMouseMove={e => onMouseMove(e)}
     >
       {height > 50 && (
         <InnerBlock>
           <div>{startTime.format('HH:mm')}</div>
-          <h5>{title}</h5>
+          {height > 80 && <Title>{title}</Title>}
           <div>{endTime.format('HH:mm')}</div>
           {shadow && (
             <button
@@ -101,26 +107,34 @@ const TaskBlock = props => {
   );
 };
 
+function getRelatveTime(y, outerHeight, date) {
+  if (!date) {
+    return;
+  }
+  const minutes = parseInt(24 * 60 * (y / outerHeight));
+  return date.clone().add(minutes, 'minutes');
+}
+
 const Container = styled.div.attrs(props => ({
   style: {
     height: props.height + 'px',
     cursor: props.cursor,
     opacity: props.disabled ? '0.3' : 1,
     transform: `translate3d(0, ${props.top}px, 0)`,
-    boxShadow:
-      props.shadow || props.moving
-        ? `0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    boxShadow: props.shadow
+      ? `0 3px 6px -4px rgba(0, 0, 0, 0.12),
       0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)`
-        : 'none',
+      : 'none',
   },
 }))`
   position: absolute;
   top: 0;
   left: 4px;
   width: calc(100% - 8px);
-  background-color: #d6ebfd;
+  background-color: #e9f2fb;
+  border-radius: 4px;
   font-size: 12px;
-  color: blue;
+  color: #446ee4;
 `;
 
 const InnerBlock = styled.div`
@@ -129,6 +143,13 @@ const InnerBlock = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+`;
+
+const Title = styled.div`
+  flex: 1;
+  padding-top: 10px;
+  font-weight: 600;
+  font-size: 14px;
 `;
 
 export default TaskBlock;

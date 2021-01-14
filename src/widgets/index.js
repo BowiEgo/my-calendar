@@ -6,12 +6,12 @@ import CalendarList from './CalendarList';
 import CalendarType from './CalendarType';
 import NavBar from './NavBar';
 import SearchBar from './SearchBar';
-import BackForthSwitch from './BackForthSwitch';
+import BackForwardSwitch from './BackForwardSwitch';
 import { TaskBlock, TaskBlockSolid } from './TaskBlock';
 import TypeSwitch from './TypeSwitch';
 
 const widgets = [
-  BackForthSwitch,
+  BackForwardSwitch,
   Calendar,
   CalendarCell,
   CalendarGrid,
@@ -30,7 +30,7 @@ widgets.forEach(widget => {
 });
 
 export {
-  BackForthSwitch,
+  BackForwardSwitch,
   Calendar,
   CalendarCell,
   CalendarGrid,

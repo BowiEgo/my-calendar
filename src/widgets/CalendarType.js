@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { BackForthSwitch, TypeSwitch } from './index.js';
+import { BackForwardSwitch, TypeSwitch } from './index.js';
 
 const CalendarType = props => {
   const handleChangeType = type => {
@@ -10,7 +10,7 @@ const CalendarType = props => {
     <Container>
       <h2>2020年 12月</h2>
       <TypeSwitch changeType={handleChangeType}></TypeSwitch>
-      <BackForthSwitch></BackForthSwitch>
+      <BackForwardSwitch></BackForwardSwitch>
     </Container>
   );
 };

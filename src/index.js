@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './assets/styles/common.scss';
+import './assets/styles/animate.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import moment from 'moment';

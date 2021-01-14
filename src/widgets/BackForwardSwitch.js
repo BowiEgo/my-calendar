@@ -3,7 +3,7 @@ import styled, { ThemeContext } from 'styled-components';
 import { ChevronLeft, ChevronRight } from 'react-feather';
 import { Button } from '../components';
 
-const BackForthSwitch = props => {
+const BackForwardSwitch = props => {
   const themeContext = useContext(ThemeContext);
 
   return (
@@ -45,4 +45,4 @@ const Container = styled.div`
   border-radius: 6px;
 `;
 
-export default BackForthSwitch;
+export default BackForwardSwitch;

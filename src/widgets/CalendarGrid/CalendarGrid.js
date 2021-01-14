@@ -75,17 +75,6 @@ const CalendarGrid = props => {
         </GridWeek>
       </GridWeekContainer>
       <GridContentScroll {...mouseEvent}>
-        {/* <div
-          style={{
-            width: '20px',
-            height: '20px',
-            borderRadius: '50%',
-            background: 'blue',
-            position: 'absolute',
-            left: mousePosition.x - 10 + 'px',
-            top: mousePosition.y - 10 + 'px',
-          }}
-        ></div> */}
         <GridContent>
           <GridLabel ref={labelElRef}>{labelEl}</GridLabel>
           <GridTable week={week} mousePosition={mousePosition}></GridTable>
@@ -94,21 +83,6 @@ const CalendarGrid = props => {
     </GridContainer>
   );
 };
-
-function getRelativePoint(event, containerBCR, scrollTop) {
-  return {
-    x: event.clientX - containerBCR.x,
-    y: event.clientY - containerBCR.y + scrollTop,
-  };
-}
-
-function getRelatveTime(y, container, date) {
-  if (!date) return;
-  const minutes = parseInt(
-    24 * 60 * (y / container.getBoundingClientRect().height),
-  );
-  return date.clone().add(minutes, 'minutes');
-}
 
 const GridContainer = styled.div`
   display: flex;
@@ -197,7 +171,6 @@ const GridContentScroll = styled.div`
   display: flex;
   flex: 1 1 auto;
   height: 0px;
-  cursor: ${props => (props.isResizing ? 'ns-resize' : 'auto')};
   &:hover::-webkit-scrollbar-thumb {
     visibility: visible;
   }

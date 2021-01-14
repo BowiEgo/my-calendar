@@ -14,11 +14,14 @@ function App() {
   const [currentDate, setCurrentDate] = useState(null);
   const [week, setWeek] = useState([]);
   const [type, setType] = useState('week');
+  const [girdClassName, setGridClassName] = useState('');
 
   const calendarElRef = useRef();
 
   const prevWeek = () => {
+    console.log('prevWeek');
     calendarElRef.current.prevWeek();
+    setGridClassName('fade-in-left');
   };
 
   const nextWeek = () => {
@@ -31,7 +34,16 @@ function App() {
         <AppContent>
           <NavBar></NavBar>
           <CalendarType changeType={setType}></CalendarType>
-          <CalendarGrid selectedDate={currentDate} week={week}></CalendarGrid>
+          <CalendarGrid
+            className={girdClassName}
+            selectedDate={currentDate}
+            week={week}
+          ></CalendarGrid>
+          {/* <CalendarGrid
+            className={'fade-in-left'}
+            selectedDate={currentDate}
+            week={week}
+          ></CalendarGrid> */}
         </AppContent>
         <CalendarBar>
           {/* <div className="button-group">
