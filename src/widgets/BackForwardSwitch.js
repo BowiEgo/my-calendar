@@ -2,9 +2,37 @@ import { useContext } from 'react';
 import styled, { ThemeContext } from 'styled-components';
 import { ChevronLeft, ChevronRight } from 'react-feather';
 import { Button } from '../components';
+import { useSelector, useDispatch } from 'react-redux';
 
 const BackForwardSwitch = props => {
   const themeContext = useContext(ThemeContext);
+
+  const weekSwitchStatus = useSelector(state => state.weekSwitchStatus);
+  const dispatch = useDispatch();
+
+  const prevWeek = () => {
+    if (weekSwitchStatus !== 'static') {
+      return;
+    }
+    dispatch({
+      type: 'CHANGE_WEEK_SWITCH_STATUS',
+      payload: {
+        weekSwitchStatus: 'prev',
+      },
+    });
+  };
+
+  const nextWeek = () => {
+    if (weekSwitchStatus !== 'static') {
+      return;
+    }
+    dispatch({
+      type: 'CHANGE_WEEK_SWITCH_STATUS',
+      payload: {
+        weekSwitchStatus: 'next',
+      },
+    });
+  };
 
   return (
     <Container>
@@ -13,6 +41,7 @@ const BackForwardSwitch = props => {
         height={32}
         backgroundColor={themeContext.primaryColorSecondary}
         hoverColor={themeContext.primaryColorSecondary}
+        onClick={prevWeek}
       >
         <ChevronLeft color={themeContext.textColor} size={14} />
       </Button>
@@ -29,6 +58,7 @@ const BackForwardSwitch = props => {
         height={32}
         backgroundColor={themeContext.primaryColorSecondary}
         hoverColor={themeContext.primaryColorSecondary}
+        onClick={nextWeek}
       >
         <ChevronRight color={themeContext.textColor} size={14} />
       </Button>

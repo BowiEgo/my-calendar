@@ -26,37 +26,6 @@ const CalendarGridTable = ({ week, mousePosition, offset }) => {
     if (isMoving) return 'move';
   }, [isDrawing, isMoving]);
 
-  useEffect(() => {
-    const tableBCR = tableElRef.current.getBoundingClientRect();
-    tableWidth.current = tableBCR.width;
-    tableHeight.current = tableBCR.height;
-  }, []);
-
-  useEffect(() => {
-    let posX = mousePosition.x;
-    if (mousePosition.x > tableWidth.current) {
-      outArea();
-      posX = tableWidth.current;
-    }
-
-    let col = parseInt(posX / (tableWidth.current / 7));
-    col = col === 7 ? 6 : col;
-    setCurrentCol(col);
-
-    if (isDrawing) {
-      activedCol.current = currentCol;
-    }
-  }, [mousePosition, isDrawing, currentCol]);
-
-  useEffect(() => {
-    if (isDrawing || isMoving) {
-      activedCol.current = currentCol;
-    }
-    if (activedBlockIndex.current > -1) {
-      changeBlockDate(activedBlockIndex.current);
-    }
-  }, [currentCol, isDrawing, isMoving]);
-
   const handleMouseDown = e => {
     if (isCreating) {
       setIsDrawing(false);
@@ -180,15 +149,18 @@ const CalendarGridTable = ({ week, mousePosition, offset }) => {
     setBlockList([...newBlockList]);
   };
 
-  const changeBlockDate = index => {
-    let newBlockList = [...blockList];
-    let block = newBlockList[index];
+  const changeBlockDate = useCallback(
+    index => {
+      let newBlockList = [...blockList];
+      let block = newBlockList[index];
 
-    if (!block || block.disabled) return;
-    block.date = week[currentCol].clone();
+      if (!block || block.disabled) return;
+      block.date = week[currentCol].clone();
 
-    setBlockList([...newBlockList]);
-  };
+      setBlockList([...newBlockList]);
+    },
+    [blockList, currentCol, week],
+  );
 
   const handleBlockPickUp = () => {
     let newBlockList = [...blockList];
@@ -199,6 +171,37 @@ const CalendarGridTable = ({ week, mousePosition, offset }) => {
     setTempBlockHeight(block.height);
     setIsMoving(true);
   };
+
+  useEffect(() => {
+    const tableBCR = tableElRef.current.getBoundingClientRect();
+    tableWidth.current = tableBCR.width;
+    tableHeight.current = tableBCR.height;
+  }, []);
+
+  useEffect(() => {
+    let posX = mousePosition.x;
+    if (mousePosition.x > tableWidth.current) {
+      outArea();
+      posX = tableWidth.current;
+    }
+
+    let col = parseInt(posX / (tableWidth.current / 7));
+    col = col === 7 ? 6 : col;
+    setCurrentCol(col);
+
+    if (isDrawing) {
+      activedCol.current = currentCol;
+    }
+  }, [mousePosition, isDrawing, currentCol]);
+
+  useEffect(() => {
+    if (isDrawing || isMoving) {
+      activedCol.current = currentCol;
+    }
+    if (activedBlockIndex.current > -1) {
+      changeBlockDate(activedBlockIndex.current);
+    }
+  }, [currentCol, isDrawing, isMoving, changeBlockDate]);
 
   let ht = 0;
   const hours = Array(24)

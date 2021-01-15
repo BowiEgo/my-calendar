@@ -7,13 +7,20 @@ import useMousePosition from '../../utils/useMousePosition';
 
 let bid = 0;
 
-const CalendarGrid = props => {
+const CalendarGrid = ({
+  selectedDate,
+  week,
+  scrollTop,
+  onMounted,
+  onScroll,
+}) => {
   // Props
-  const { selectedDate, week } = props;
   const weekdaysShort = moment.weekdaysShort();
 
   const [labelWidth, setLabelWidth] = useState(0);
 
+  const containerRef = useRef();
+  const scrollRef = useRef();
   const labelElRef = useRef();
 
   // Weeklist
@@ -58,12 +65,29 @@ const CalendarGrid = props => {
     };
   });
 
+  const handleScroll = e => {
+    onScroll && onScroll(e.target.scrollTop);
+  };
+
   useEffect(() => {
     setLabelWidth(labelElRef.current.getBoundingClientRect().width);
+    onMounted && onMounted(containerRef.current);
+    if (scrollTop) {
+      scrollRef.current.scrollTo(0, scrollTop);
+    }
+    // setInterval(() => {
+    //   scrollRef.current.scrollTop += 100;
+    // }, 3000);
   }, []);
 
+  // useEffect(() => {
+  //   if (scrollTop) {
+  //     scrollRef.current.scrollTop = scrollTop;
+  //   }
+  // }, [scrollRef]);
+
   return (
-    <GridContainer>
+    <GridContainer ref={containerRef}>
       <GridWeekContainer>
         <GridWeek>
           <WeekLabelContainer>
@@ -74,7 +98,11 @@ const CalendarGrid = props => {
           {wl}
         </GridWeek>
       </GridWeekContainer>
-      <GridContentScroll {...mouseEvent}>
+      <GridContentScroll
+        {...mouseEvent}
+        ref={scrollRef}
+        onScroll={handleScroll}
+      >
         <GridContent>
           <GridLabel ref={labelElRef}>{labelEl}</GridLabel>
           <GridTable week={week} mousePosition={mousePosition}></GridTable>
@@ -88,6 +116,7 @@ const GridContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
+  background: #fff;
 `;
 
 const GridWeekContainer = styled.div`

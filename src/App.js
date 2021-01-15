@@ -1,6 +1,14 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import styled, { ThemeProvider } from 'styled-components';
 import { main } from './themes';
+import {
+  motion,
+  AnimatePresence,
+  animate,
+  useAnimation,
+  useMotionValue,
+} from 'framer-motion';
 // import { ChevronLeft, ChevronRight, MessageSquare } from 'react-feather';
 import {
   Calendar,
@@ -11,22 +19,61 @@ import {
 } from './widgets';
 
 function App() {
-  const [currentDate, setCurrentDate] = useState(null);
+  const [currentDate, setCurrentDate] = useState();
   const [week, setWeek] = useState([]);
   const [type, setType] = useState('week');
-  const [girdClassName, setGridClassName] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+  const [gridBCR, setGridBCR] = useState();
 
   const calendarElRef = useRef();
+  const gridScrollTop = useRef();
 
-  const prevWeek = () => {
-    console.log('prevWeek');
-    calendarElRef.current.prevWeek();
-    setGridClassName('fade-in-left');
+  const weekSwitchStatus = useSelector(state => state.weekSwitchStatus);
+  const dispatch = useDispatch();
+
+  const handleGridMounted = el => {
+    setGridBCR(el.getBoundingClientRect());
   };
 
-  const nextWeek = () => {
-    calendarElRef.current.nextWeek();
+  const handleGridScroll = top => {
+    gridScrollTop.current = top;
   };
+
+  const x = useMotionValue(100);
+  const control = useAnimation();
+
+  useEffect(() => {
+    if (weekSwitchStatus !== 'static') {
+      if (weekSwitchStatus === 'prev') {
+        control.set({
+          opacity: 0,
+          translateX: -80,
+        });
+        control.start({
+          opacity: 1,
+          translateX: 0,
+        });
+      } else {
+        control.set({ opacity: 0, translateX: 80 });
+        control.start({
+          opacity: 1,
+          translateX: 0,
+        });
+      }
+      setIsVisible(true);
+
+      setTimeout(() => {
+        dispatch({
+          type: 'CHANGE_WEEK_SWITCH_STATUS',
+          payload: {
+            weekSwitchStatus: 'static',
+          },
+        });
+      }, 300);
+    } else {
+      setIsVisible(false);
+    }
+  }, [weekSwitchStatus]);
 
   return (
     <ThemeProvider theme={main}>
@@ -34,16 +81,44 @@ function App() {
         <AppContent>
           <NavBar></NavBar>
           <CalendarType changeType={setType}></CalendarType>
-          <CalendarGrid
-            className={girdClassName}
-            selectedDate={currentDate}
-            week={week}
-          ></CalendarGrid>
-          {/* <CalendarGrid
-            className={'fade-in-left'}
-            selectedDate={currentDate}
-            week={week}
-          ></CalendarGrid> */}
+          <AnimatePresence>
+            {gridBCR && isVisible && (
+              <motion.div
+                initial={{
+                  opacity: 1,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  height: gridBCR.height,
+                  width: gridBCR.width,
+                  position: 'absolute',
+                  top: gridBCR.top,
+                }}
+              >
+                <CalendarGrid
+                  selectedDate={currentDate}
+                  week={week}
+                  scrollTop={gridScrollTop.current}
+                ></CalendarGrid>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <motion.div
+            animate={control}
+            transition={{ duration: 0.3 }}
+            style={{ height: '100%' }}
+          >
+            <CalendarGrid
+              selectedDate={currentDate}
+              week={week}
+              onMounted={handleGridMounted}
+              onScroll={handleGridScroll}
+            ></CalendarGrid>
+          </motion.div>
         </AppContent>
         <CalendarBar>
           {/* <div className="button-group">

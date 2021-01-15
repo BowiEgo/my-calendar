@@ -1,8 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { createStore } from 'redux';
+import { Provider } from 'react-redux';
+import reducer from './store';
 import './assets/styles/common.scss';
-import './assets/styles/animate.css';
 import App from './App';
+import Playground from './Playground';
 import reportWebVitals from './reportWebVitals';
 import moment from 'moment';
 import 'moment/locale/zh-cn';
@@ -15,9 +18,14 @@ moment.updateLocale('zh-cn', {
 
 console.log('moment locale:', moment.locale());
 
+const store = createStore(reducer);
+
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <Provider store={store}>
+      <App />
+      {/* <Playground /> */}
+    </Provider>
   </React.StrictMode>,
   document.getElementById('root'),
 );

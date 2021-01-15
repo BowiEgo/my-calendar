@@ -1,5 +1,33 @@
 import styled from 'styled-components';
 
+const Button = ({
+  width,
+  height,
+  circle,
+  border,
+  backgroundColor,
+  hoverColor,
+  children,
+  onClick,
+}) => {
+  const w = width ? width + 'px' : 'auto';
+  const h = height ? height + 'px' : w;
+
+  return (
+    <Container
+      width={w}
+      height={h}
+      circle={circle}
+      border={border}
+      backgroundColor={backgroundColor}
+      hoverColor={hoverColor}
+      onClick={onClick}
+    >
+      {children}
+    </Container>
+  );
+};
+
 const Container = styled.button`
   cursor: pointer;
   display: flex;
@@ -16,25 +44,5 @@ const Container = styled.button`
     background-color: ${props => props.hoverColor || '#efe9ff'};
   }
 `;
-
-const Button = props => {
-  const { width, height, circle, border, backgroundColor, hoverColor } = props;
-
-  const w = props.width ? props.width + 'px' : 'auto';
-  const h = props.height ? props.height + 'px' : w;
-
-  return (
-    <Container
-      width={w}
-      height={h}
-      circle={circle}
-      border={border}
-      backgroundColor={backgroundColor}
-      hoverColor={hoverColor}
-    >
-      {props.children}
-    </Container>
-  );
-};
 
 export default Button;

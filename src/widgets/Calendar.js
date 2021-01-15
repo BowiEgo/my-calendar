@@ -11,7 +11,7 @@ import { ChevronLeft, ChevronRight } from 'react-feather';
 import { Button, ButtonGroup } from '../components';
 import { CalendarCell } from '../widgets';
 
-const Calendar = (props, ref) => {
+const Calendar = ({ change, changeWeek }, ref) => {
   const themeContext = useContext(ThemeContext);
 
   const [startOfMonth, setStartOfMonth] = useState(
@@ -29,9 +29,9 @@ const Calendar = (props, ref) => {
   );
 
   useEffect(() => {
-    props.change(currentDate);
+    change(currentDate);
     if (startOfMonth.isSame(currentDate.clone().startOf('month'))) {
-      props.changeWeek(calendar[currentWeek]);
+      changeWeek(calendar[currentWeek]);
     }
   });
 
@@ -43,7 +43,7 @@ const Calendar = (props, ref) => {
     setCurrentDate(calendar[row][d.weekday()]);
 
     if (!weekStart.isSame(startOfWeek)) {
-      props.changeWeek(calendar[row]);
+      changeWeek(calendar[row]);
       setStartOfWeek(weekStart);
       setCurrentWeek(row);
     }
