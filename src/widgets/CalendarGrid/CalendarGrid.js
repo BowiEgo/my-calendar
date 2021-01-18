@@ -1,19 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  motion,
+  AnimatePresence,
+  animate,
+  useAnimation,
+  useMotionValue,
+} from 'framer-motion';
 import styled from 'styled-components';
 import moment from 'moment';
 import { Calendar as CalendarIcon } from 'react-feather';
-import { CalendarGridTable as GridTable } from '../index';
+import {
+  CalendarGridTable as GridTable,
+  CalendarGridPointer as GridPointer,
+} from '../index';
 import useMousePosition from '../../utils/useMousePosition';
 
 let bid = 0;
 
-const CalendarGrid = ({
-  selectedDate,
-  week,
-  scrollTop,
-  onMounted,
-  onScroll,
-}) => {
+const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
   // Props
   const weekdaysShort = moment.weekdaysShort();
 
@@ -22,18 +27,80 @@ const CalendarGrid = ({
   const containerRef = useRef();
   const scrollRef = useRef();
   const labelElRef = useRef();
+  const motionTable = useRef();
+  const tableHeight = useRef(0);
+  const tableWidth = useRef(0);
+
+  const weekSwitchStatus = useSelector(state => state.weekSwitchStatus);
+  const dispatch = useDispatch();
+
+  const control = useAnimation();
+
+  const handleTableMounted = tableBCR => {
+    tableHeight.current = tableBCR.height;
+    tableWidth.current = tableBCR.width;
+  };
+
+  const handlePointerInitialed = pointerTop => {
+    console.log('handlePointerInitialed', pointerTop, scrollRef.current);
+    scrollRef.current.scrollTop =
+      pointerTop - scrollRef.current.getBoundingClientRect().height / 2;
+  };
+
+  useEffect(() => {
+    setLabelWidth(labelElRef.current.getBoundingClientRect().width);
+  }, []);
+
+  useEffect(() => {
+    if (weekSwitchStatus !== 'static') {
+      if (weekSwitchStatus === 'prev') {
+        control.set({
+          opacity: 0,
+          translateX: -80,
+        });
+        control.start({
+          opacity: 1,
+          translateX: 0,
+        });
+      } else {
+        control.set({ opacity: 0, translateX: 80 });
+        control.start({
+          opacity: 1,
+          translateX: 0,
+        });
+      }
+      // setIsVisible(true);
+
+      setTimeout(() => {
+        dispatch({
+          type: 'CHANGE_WEEK_SWITCH_STATUS',
+          payload: {
+            weekSwitchStatus: 'static',
+          },
+        });
+      }, 300);
+    } else {
+      // setIsVisible(false);
+    }
+  }, [weekSwitchStatus]);
 
   // Weeklist
   const wl = week.map((date, idx) => {
     return (
-      <WeekCell
-        isActive={date.isSame(selectedDate)}
-        isToday={date.isSame(moment().startOf('day'))}
+      <motion.div
         key={idx}
+        animate={control}
+        transition={{ duration: 0.3 }}
+        style={{ height: '100%', flex: 1 }}
       >
-        <h5>{weekdaysShort[date.weekday()]}</h5>
-        <span>{date.date()}</span>
-      </WeekCell>
+        <WeekCell
+          isActive={date.isSame(selectedDate)}
+          isToday={date.isSame(moment().startOf('day'))}
+        >
+          <h5>{weekdaysShort[date.weekday()]}</h5>
+          <span>{date.date()}</span>
+        </WeekCell>
+      </motion.div>
     );
   });
 
@@ -65,27 +132,6 @@ const CalendarGrid = ({
     };
   });
 
-  const handleScroll = e => {
-    onScroll && onScroll(e.target.scrollTop);
-  };
-
-  useEffect(() => {
-    setLabelWidth(labelElRef.current.getBoundingClientRect().width);
-    onMounted && onMounted(containerRef.current);
-    if (scrollTop) {
-      scrollRef.current.scrollTo(0, scrollTop);
-    }
-    // setInterval(() => {
-    //   scrollRef.current.scrollTop += 100;
-    // }, 3000);
-  }, []);
-
-  // useEffect(() => {
-  //   if (scrollTop) {
-  //     scrollRef.current.scrollTop = scrollTop;
-  //   }
-  // }, [scrollRef]);
-
   return (
     <GridContainer ref={containerRef}>
       <GridWeekContainer>
@@ -98,14 +144,26 @@ const CalendarGrid = ({
           {wl}
         </GridWeek>
       </GridWeekContainer>
-      <GridContentScroll
-        {...mouseEvent}
-        ref={scrollRef}
-        onScroll={handleScroll}
-      >
+      <GridContentScroll {...mouseEvent} ref={scrollRef}>
         <GridContent>
           <GridLabel ref={labelElRef}>{labelEl}</GridLabel>
-          <GridTable week={week} mousePosition={mousePosition}></GridTable>
+          <GridPointer
+            tableHeight={tableHeight.current}
+            tableWidth={tableWidth.current}
+            onInitialed={handlePointerInitialed}
+          ></GridPointer>
+          {/* <motion.div
+            animate={control}
+            transition={{ duration: 0.3 }}
+            style={{ height: '100%', flex: 1 }}
+            ref={motionTable}
+          > */}
+          <GridTable
+            week={week}
+            mousePosition={mousePosition}
+            onMounted={handleTableMounted}
+          ></GridTable>
+          {/* </motion.div> */}
         </GridContent>
       </GridContentScroll>
     </GridContainer>
@@ -216,6 +274,8 @@ const GridLabel = styled.div`
   width: 60px;
   font-size: 14px;
   color: #9e9e9e;
+  border-right: 1px solid ${props => props.theme.borderColor};
+  box-sizing: content-box;
 `;
 
 const GridLabelCell = styled.div`

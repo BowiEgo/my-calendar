@@ -6,7 +6,7 @@ import { TaskBlock, TaskBlockSolid } from '../index';
 
 let bid = 0;
 
-const CalendarGridTable = ({ week, mousePosition, offset }) => {
+const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
   const [blockList, setBlockList] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
@@ -176,7 +176,9 @@ const CalendarGridTable = ({ week, mousePosition, offset }) => {
     const tableBCR = tableElRef.current.getBoundingClientRect();
     tableWidth.current = tableBCR.width;
     tableHeight.current = tableBCR.height;
-  }, []);
+
+    onMounted(tableBCR);
+  }, [onMounted]);
 
   useEffect(() => {
     let posX = mousePosition.x;
@@ -258,12 +260,13 @@ const CalendarGridTable = ({ week, mousePosition, offset }) => {
       onKeyPress={handleKeyPress}
     >
       {tableEl}
-      {/* <div style={{ position: 'fixed', top: 0 }}>
-        <p>{`pos: ${mousePosition.x}.${mousePosition.y}`}</p>
+      <div style={{ position: 'fixed', top: 0 }}>
+        <p>{`pos: ${mousePosition.x}^${mousePosition.y}`}</p>
         <p>{`col: ${currentCol}`}</p>
         <p>{`tempBlockTop: ${tempBlockTop}`}</p>
         <p>{`tempBlockHeight: ${tempBlockHeight}`}</p>
-      </div> */}
+        {/* <p>{`tableHeight: ${tableHeight.current}`}</p> */}
+      </div>
     </Container>
   );
 };
@@ -271,15 +274,13 @@ const CalendarGridTable = ({ week, mousePosition, offset }) => {
 const Container = styled.div`
   display: flex;
   flex: 1;
+  height: auto;
   cursor: ${props => props.cursor};
 `;
 
 const GridTableCol = styled.div`
   position: relative;
   flex: 1;
-  &:first-child .grid-table-cell {
-    border-left: 1px solid ${props => props.theme.borderColor};
-  }
 `;
 
 const GridTableCell = styled.div`
