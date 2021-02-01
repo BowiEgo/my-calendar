@@ -1,11 +1,11 @@
 import { withTheme } from 'styled-components';
-import Button from './Button';
-import ButtonGroup from './ButtonGroup';
+import { Button, ButtonGroup } from './Button';
+import Modal from './Modal';
 
-const components = [Button, ButtonGroup];
+const components = [Button, ButtonGroup, Modal];
 
 components.forEach(component => {
   component = withTheme(component);
 });
 
-export { Button, ButtonGroup };
+export { Button, ButtonGroup, Modal };

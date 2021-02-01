@@ -10,15 +10,17 @@ import {
 import styled from 'styled-components';
 import moment from 'moment';
 import { Calendar as CalendarIcon } from 'react-feather';
+import { Modal } from '../../components';
 import {
   CalendarGridTable as GridTable,
   CalendarGridPointer as GridPointer,
+  TaskEditor,
 } from '../index';
 import useMousePosition from '../../utils/useMousePosition';
 
 let bid = 0;
 
-const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
+const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
   // Props
   const weekdaysShort = moment.weekdaysShort();
 
@@ -31,9 +33,13 @@ const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
   const tableHeight = useRef(0);
   const tableWidth = useRef(0);
 
+  // store
   const weekSwitchStatus = useSelector(state => state.weekSwitchStatus);
+  const isTaskEditorOpen = useSelector(state => state.isTaskEditorOpen);
+
   const dispatch = useDispatch();
 
+  // animate
   const control = useAnimation();
 
   const handleTableMounted = tableBCR => {
@@ -42,9 +48,34 @@ const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
   };
 
   const handlePointerInitialed = pointerTop => {
-    console.log('handlePointerInitialed', pointerTop, scrollRef.current);
     scrollRef.current.scrollTop =
       pointerTop - scrollRef.current.getBoundingClientRect().height / 2;
+  };
+
+  const handleClickBlock = id => {
+    if (isTaskEditorOpen) {
+      closeModal();
+    } else {
+      openModal();
+    }
+  };
+
+  const openModal = () => {
+    dispatch({
+      type: 'CHANGE_IS_TASK_EDITOR_OPEN',
+      payload: {
+        isTaskEditorOpen: true,
+      },
+    });
+  };
+
+  const closeModal = () => {
+    dispatch({
+      type: 'CHANGE_IS_TASK_EDITOR_OPEN',
+      payload: {
+        isTaskEditorOpen: false,
+      },
+    });
   };
 
   useEffect(() => {
@@ -82,46 +113,49 @@ const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
     } else {
       // setIsVisible(false);
     }
-  }, [weekSwitchStatus]);
+  }, [weekSwitchStatus, control, dispatch]);
 
-  // Weeklist
-  const wl = week.map((date, idx) => {
-    return (
-      <motion.div
-        key={idx}
-        animate={control}
-        transition={{ duration: 0.3 }}
-        style={{ height: '100%', flex: 1 }}
-      >
-        <WeekCell
-          isActive={date.isSame(selectedDate)}
-          isToday={date.isSame(moment().startOf('day'))}
+  const renderWeekList = () => {
+    return week.map((date, idx) => {
+      return (
+        <motion.div
+          key={idx}
+          animate={control}
+          transition={{ duration: 0.3 }}
+          style={{ height: '100%', flex: 1 }}
         >
-          <h5>{weekdaysShort[date.weekday()]}</h5>
-          <span>{date.date()}</span>
-        </WeekCell>
-      </motion.div>
-    );
-  });
+          <WeekCell
+            isActive={date.isSame(selectedDate)}
+            isToday={date.isSame(moment().startOf('day'))}
+          >
+            <h5>{weekdaysShort[date.weekday()]}</h5>
+            <span>{date.date()}</span>
+          </WeekCell>
+        </motion.div>
+      );
+    });
+  };
 
   // TimeLabel
-  let ht = 0;
-  const hours = Array(24)
-    .fill(0)
-    .map(() => ht++);
+  const renderTimeLabel = () => {
+    let ht = 0;
+    const hours = Array(24)
+      .fill(0)
+      .map(() => ht++);
 
-  const labelEl = (
-    <div>
-      {hours.map((h, index) => (
-        <GridLabelCell key={index}>
-          <span>{h < 10 ? `0${h}:00` : `${h}:00`}</span>
-          <Tick width={16} top={'25%'}></Tick>
-          <Tick width={32} top={'50%'}></Tick>
-          <Tick width={16} top={'75%'}></Tick>
-        </GridLabelCell>
-      ))}
-    </div>
-  );
+    return (
+      <div>
+        {hours.map((h, index) => (
+          <GridLabelCell key={index}>
+            <span>{h < 10 ? `0${h}:00` : `${h}:00`}</span>
+            <Tick width={16} top={'25%'}></Tick>
+            <Tick width={32} top={'50%'}></Tick>
+            <Tick width={16} top={'75%'}></Tick>
+          </GridLabelCell>
+        ))}
+      </div>
+    );
+  };
 
   const { mousePosition, bind: mouseEvent } = useMousePosition(pos => {
     let posX = pos.x - labelWidth;
@@ -141,31 +175,39 @@ const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
               <CalendarIcon color="grey" size="20"></CalendarIcon>
             </WeekLabel>
           </WeekLabelContainer>
-          {wl}
+          {renderWeekList()}
         </GridWeek>
       </GridWeekContainer>
       <GridContentScroll {...mouseEvent} ref={scrollRef}>
         <GridContent>
-          <GridLabel ref={labelElRef}>{labelEl}</GridLabel>
+          <GridLabel ref={labelElRef}>{renderTimeLabel()}</GridLabel>
           <GridPointer
             tableHeight={tableHeight.current}
             tableWidth={tableWidth.current}
             onInitialed={handlePointerInitialed}
           ></GridPointer>
-          {/* <motion.div
+          <motion.div
             animate={control}
             transition={{ duration: 0.3 }}
             style={{ height: '100%', flex: 1 }}
             ref={motionTable}
-          > */}
-          <GridTable
-            week={week}
-            mousePosition={mousePosition}
-            onMounted={handleTableMounted}
-          ></GridTable>
-          {/* </motion.div> */}
+          >
+            <GridTable
+              week={week}
+              mousePosition={mousePosition}
+              onMounted={handleTableMounted}
+              onClickBlock={handleClickBlock}
+            ></GridTable>
+          </motion.div>
         </GridContent>
       </GridContentScroll>
+      <Modal
+        isOpen={isTaskEditorOpen}
+        container={rootContainer}
+        onClickOutside={closeModal}
+      >
+        <TaskEditor></TaskEditor>
+      </Modal>
     </GridContainer>
   );
 };

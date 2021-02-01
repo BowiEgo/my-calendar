@@ -8,8 +8,8 @@ import {
 import styled, { ThemeContext } from 'styled-components';
 import moment from 'moment';
 import { ChevronLeft, ChevronRight } from 'react-feather';
-import { Button, ButtonGroup } from '../components';
-import { CalendarCell } from '../widgets';
+import { Button, ButtonGroup } from '../../components';
+import { CalendarCell } from '../index';
 
 const Calendar = ({ change, changeWeek }, ref) => {
   const themeContext = useContext(ThemeContext);

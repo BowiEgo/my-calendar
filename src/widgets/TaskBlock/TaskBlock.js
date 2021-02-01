@@ -108,7 +108,6 @@ const TaskBlock = ({
 };
 
 function getRelatveTime(y, outerHeight, date) {
-  console.log('getRelatveTime', outerHeight);
   if (!date) {
     return;
   }

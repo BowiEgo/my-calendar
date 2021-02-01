@@ -3,7 +3,7 @@ import styled, { ThemeContext } from 'styled-components';
 import moment from 'moment';
 
 const POINTER_WIDTH = 60;
-const POINTER_HEIGHT = 26;
+const POINTER_HEIGHT = 24;
 
 const CalendarGridPointer = ({ tableHeight, tableWidth, onInitialed }) => {
   const [nowTime, setNowTime] = useState(moment());
@@ -69,7 +69,7 @@ const PointerLabel = styled.div`
   background-color: #f44336;
   color: white;
   font-size: 12px;
-  line-height: 30px;
+  line-height: ${POINTER_HEIGHT}px;
   text-align: center;
 `;
 
@@ -79,7 +79,7 @@ const PointerLine = styled.div`
   left: ${POINTER_WIDTH}px;
   width: ${props => props.width + 'px'};
   height: 1px;
-  background-color: #f44336;
+  background-color: #ffd5d2;
 `;
 
 export default CalendarGridPointer;

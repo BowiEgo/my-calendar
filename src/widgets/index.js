@@ -1,6 +1,5 @@
 import { withTheme } from 'styled-components';
-import Calendar from './Calendar';
-import CalendarCell from './CalendarCell';
+import { Calendar, CalendarCell } from './Calendar';
 import {
   CalendarGrid,
   CalendarGridTable,
@@ -12,6 +11,7 @@ import NavBar from './NavBar';
 import SearchBar from './SearchBar';
 import BackForwardSwitch from './BackForwardSwitch';
 import { TaskBlock, TaskBlockSolid } from './TaskBlock';
+import TaskEditor from './TaskEditor';
 import TypeSwitch from './TypeSwitch';
 
 const widgets = [
@@ -27,6 +27,7 @@ const widgets = [
   SearchBar,
   TaskBlock,
   TaskBlockSolid,
+  TaskEditor,
   TypeSwitch,
 ];
 
@@ -47,5 +48,6 @@ export {
   SearchBar,
   TaskBlock,
   TaskBlockSolid,
+  TaskEditor,
   TypeSwitch,
 };

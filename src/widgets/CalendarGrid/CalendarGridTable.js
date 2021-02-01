@@ -1,12 +1,20 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { cloneDeep } from 'lodash';
 import { _reqFrame } from '../../utils/reqFrame';
 import { TaskBlock, TaskBlockSolid } from '../index';
 
 let bid = 0;
+const CRITICAL_BLOCK_HEIGHT = 4;
 
-const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
+const CalendarGridTable = ({
+  week,
+  mousePosition,
+  offset,
+  onMounted,
+  onClickBlock,
+}) => {
   const [blockList, setBlockList] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
@@ -26,6 +34,17 @@ const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
     if (isMoving) return 'move';
   }, [isDrawing, isMoving]);
 
+  const dispatch = useDispatch();
+
+  const openModal = () => {
+    dispatch({
+      type: 'CHANGE_IS_TASK_EDITOR_OPEN',
+      payload: {
+        isTaskEditorOpen: true,
+      },
+    });
+  };
+
   const handleMouseDown = e => {
     if (isCreating) {
       setIsDrawing(false);
@@ -40,6 +59,7 @@ const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
     if (isDrawing) {
       setTempBlockHeight(mousePosition.y - tempBlockTop);
     }
+
     if (isMoving) {
       let block = blockList[activedBlockIndex.current];
       setTempBlockTop(mousePosition.y - (block ? block.top : 0));
@@ -53,7 +73,7 @@ const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
-      console.log('handleMouseUp', e);
+      // console.log('handleMouseUp', e);
     }
 
     if (activedBlockIndex.current > -1 || isMoving) {
@@ -62,6 +82,9 @@ const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
     if (isCreating) {
       setIsCreating(false);
       // return;
+    }
+    if (tempBlockHeight > CRITICAL_BLOCK_HEIGHT) {
+      openModal();
     }
     createTask();
     setIsDrawing(false);
@@ -72,7 +95,7 @@ const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
   };
 
   const handleKeyPress = e => {
-    console.log(e);
+    // console.log(e);
   };
 
   const createTask = () => {
@@ -140,6 +163,10 @@ const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
     activedBlockIndex.current = -1;
   };
 
+  const handleBlockClick = id => {
+    onClickBlock(id);
+  };
+
   const changeBlockTop = () => {
     let newBlockList = [...blockList];
     let block = newBlockList[activedBlockIndex.current];
@@ -205,49 +232,56 @@ const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
     }
   }, [currentCol, isDrawing, isMoving, changeBlockDate]);
 
-  let ht = 0;
-  const hours = Array(24)
-    .fill(0)
-    .map(() => ht++);
+  const renderTableEl = () => {
+    let ht = 0;
+    const hours = Array(24)
+      .fill(0)
+      .map(() => ht++);
 
-  const tableEl = week.map((date, index) => (
-    <GridTableCol key={index}>
-      {[
-        hours.map((h, idx) => (
-          <GridTableCell key={idx} className="grid-table-cell"></GridTableCell>
-        )),
-        blockList.map(
-          (block, idx) =>
-            block.date.isSame(date) && (
-              <TaskBlockSolid
-                {...block}
-                key={idx}
-                outerHeight={tableHeight.current}
-                onActive={activeBlock}
-                onDisactive={disactiveBlock}
-                onPickUp={handleBlockPickUp}
-              ></TaskBlockSolid>
-            ),
-        ),
-        (isDrawing || isMoving || isCreating) &
-        ((index === activedCol.current) & (tempBlockHeight > 4)) ? (
-          <TaskBlock
-            key={-1}
-            date={week[activedCol.current].clone()}
-            top={tempBlockTop}
-            height={tempBlockHeight}
-            outerHeight={tableHeight.current}
-            moving={isMoving}
-            resizing={isDrawing}
-            finishMoving={finishMoving}
-            finishResizing={finishResizing}
-            onFinish={finishCreateTask}
-            shadow
-          />
-        ) : null,
-      ]}
-    </GridTableCol>
-  ));
+    return week.map((date, index) => (
+      <GridTableCol key={index}>
+        {[
+          hours.map((h, idx) => (
+            <GridTableCell
+              key={idx}
+              className="grid-table-cell"
+            ></GridTableCell>
+          )),
+          blockList.map(
+            (block, idx) =>
+              block.date.isSame(date) && (
+                <TaskBlockSolid
+                  {...block}
+                  key={idx}
+                  outerHeight={tableHeight.current}
+                  onActive={activeBlock}
+                  onDisactive={disactiveBlock}
+                  onPickUp={handleBlockPickUp}
+                  onClick={handleBlockClick}
+                ></TaskBlockSolid>
+              ),
+          ),
+          (isDrawing || isMoving || isCreating) &
+          ((index === activedCol.current) &
+            (tempBlockHeight > CRITICAL_BLOCK_HEIGHT)) ? (
+            <TaskBlock
+              key={-1}
+              date={week[activedCol.current].clone()}
+              top={tempBlockTop}
+              height={tempBlockHeight}
+              outerHeight={tableHeight.current}
+              moving={isMoving}
+              resizing={isDrawing}
+              finishMoving={finishMoving}
+              finishResizing={finishResizing}
+              onFinish={finishCreateTask}
+              shadow
+            />
+          ) : null,
+        ]}
+      </GridTableCol>
+    ));
+  };
 
   return (
     <Container
@@ -259,14 +293,14 @@ const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
       onMouseLeave={handleMouseLeave}
       onKeyPress={handleKeyPress}
     >
-      {tableEl}
-      <div style={{ position: 'fixed', top: 0 }}>
+      {renderTableEl()}
+      {/* <div style={{ position: 'fixed', top: 0 }}>
         <p>{`pos: ${mousePosition.x}^${mousePosition.y}`}</p>
         <p>{`col: ${currentCol}`}</p>
         <p>{`tempBlockTop: ${tempBlockTop}`}</p>
         <p>{`tempBlockHeight: ${tempBlockHeight}`}</p>
-        {/* <p>{`tableHeight: ${tableHeight.current}`}</p> */}
-      </div>
+        <p>{`tableHeight: ${tableHeight.current}`}</p>
+      </div> */}
     </Container>
   );
 };

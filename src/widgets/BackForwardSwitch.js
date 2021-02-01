@@ -48,6 +48,7 @@ const BackForwardSwitch = props => {
       <Button
         width={90}
         height={32}
+        fontWeight={600}
         backgroundColor={themeContext.primaryColorSecondary}
         hoverColor={themeContext.primaryColorSecondary}
       >

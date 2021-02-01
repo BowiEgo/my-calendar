@@ -37,15 +37,15 @@ const CalendarCell = props => {
   };
 
   return (
-    <CellContainer onClick={() => handleClick()}>
+    <Container onClick={() => handleClick()}>
       <Cell backgroundColor={backgroundColor} color={textColor}>
         {date.date()}
       </Cell>
-    </CellContainer>
+    </Container>
   );
 };
 
-const CellContainer = styled.div`
+const Container = styled.div`
   cursor: pointer;
   width: 100%;
   height: 100%;

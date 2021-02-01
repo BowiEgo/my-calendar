@@ -11,6 +11,7 @@ const TaskBlockSolid = props => {
     onDisactive,
     onPickUp,
     onPutDown,
+    onClick,
   } = props;
 
   const moving = useRef(false);
@@ -42,8 +43,8 @@ const TaskBlockSolid = props => {
     moving.current = false;
   };
 
-  const onClick = e => {
-    console.log('click is triggered', e, props);
+  const handleClick = e => {
+    onClick(id);
   };
 
   const defaultOptions = {
@@ -57,7 +58,7 @@ const TaskBlockSolid = props => {
     onPressEnd,
     onLongPressStart,
     onLongPressEnd,
-    onClick,
+    handleClick,
     defaultOptions,
   );
 

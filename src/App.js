@@ -16,17 +16,23 @@ function App() {
   const [type, setType] = useState('week');
   const [isVisible, setIsVisible] = useState(false);
 
+  const rootElRef = useRef();
   const calendarElRef = useRef();
+
+  useEffect(() => {
+    console.log(rootElRef.current);
+  }, []);
 
   return (
     <ThemeProvider theme={main}>
-      <AppBody>
+      <AppBody ref={rootElRef}>
         <AppContent>
           <NavBar></NavBar>
           <CalendarType changeType={setType}></CalendarType>
           <CalendarGrid
             selectedDate={currentDate}
             week={week}
+            rootContainer={rootElRef.current}
             // onMounted={handleGridMounted}
             // onScroll={handleGridScroll}
           ></CalendarGrid>
