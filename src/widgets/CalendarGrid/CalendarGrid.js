@@ -36,6 +36,7 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
   // store
   const weekSwitchStatus = useSelector(state => state.weekSwitchStatus);
   const isTaskEditorOpen = useSelector(state => state.isTaskEditorOpen);
+  const taskEditorPosition = useSelector(state => state.taskEditorPosition);
 
   const dispatch = useDispatch();
 
@@ -50,23 +51,6 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
   const handlePointerInitialed = pointerTop => {
     scrollRef.current.scrollTop =
       pointerTop - scrollRef.current.getBoundingClientRect().height / 2;
-  };
-
-  const handleClickBlock = id => {
-    if (isTaskEditorOpen) {
-      closeModal();
-    } else {
-      openModal();
-    }
-  };
-
-  const openModal = () => {
-    dispatch({
-      type: 'CHANGE_IS_TASK_EDITOR_OPEN',
-      payload: {
-        isTaskEditorOpen: true,
-      },
-    });
   };
 
   const closeModal = () => {
@@ -196,12 +180,12 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
               week={week}
               mousePosition={mousePosition}
               onMounted={handleTableMounted}
-              onClickBlock={handleClickBlock}
             ></GridTable>
           </motion.div>
         </GridContent>
       </GridContentScroll>
       <Modal
+        left={taskEditorPosition}
         isOpen={isTaskEditorOpen}
         container={rootContainer}
         onClickOutside={closeModal}

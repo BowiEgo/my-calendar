@@ -1,4 +1,11 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  forwardRef,
+} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { cloneDeep } from 'lodash';
@@ -7,14 +14,9 @@ import { TaskBlock, TaskBlockSolid } from '../index';
 
 let bid = 0;
 const CRITICAL_BLOCK_HEIGHT = 4;
+const MODAL_WIDTH = 180;
 
-const CalendarGridTable = ({
-  week,
-  mousePosition,
-  offset,
-  onMounted,
-  onClickBlock,
-}) => {
+const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
   const [blockList, setBlockList] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
@@ -24,10 +26,10 @@ const CalendarGridTable = ({
   const [currentCol, setCurrentCol] = useState(-1);
 
   const tableElRef = useRef();
-  const tableWidth = useRef();
-  const tableHeight = useRef();
+  const tableBCR = useRef();
   const activedCol = useRef(0);
   const activedBlockIndex = useRef(-1);
+  const tempBlockRef = useRef();
 
   const cursor = useMemo(() => {
     if (isDrawing) return 'ns-resize';
@@ -36,11 +38,12 @@ const CalendarGridTable = ({
 
   const dispatch = useDispatch();
 
-  const openModal = () => {
+  const openModal = offsetX => {
     dispatch({
       type: 'CHANGE_IS_TASK_EDITOR_OPEN',
       payload: {
         isTaskEditorOpen: true,
+        taskEditorPosition: offsetX,
       },
     });
   };
@@ -84,7 +87,7 @@ const CalendarGridTable = ({
       // return;
     }
     if (tempBlockHeight > CRITICAL_BLOCK_HEIGHT) {
-      openModal();
+      openModal(getModalOffsetX(tempBlockRef.current));
     }
     createTask();
     setIsDrawing(false);
@@ -163,8 +166,23 @@ const CalendarGridTable = ({
     activedBlockIndex.current = -1;
   };
 
-  const handleBlockClick = id => {
-    onClickBlock(id);
+  const getModalOffsetX = element => {
+    let offsetX = 0;
+    if (element) {
+      let bcr = element.getBoundingClientRect();
+      offsetX = bcr.left + bcr.width + 20;
+      if (
+        offsetX + MODAL_WIDTH >
+        tableBCR.current.left + tableBCR.current.width
+      ) {
+        offsetX = bcr.left - MODAL_WIDTH - 20;
+      }
+    }
+    return offsetX;
+  };
+
+  const handleBlockClick = (id, element) => {
+    openModal(getModalOffsetX(element));
   };
 
   const changeBlockTop = () => {
@@ -200,21 +218,18 @@ const CalendarGridTable = ({
   };
 
   useEffect(() => {
-    const tableBCR = tableElRef.current.getBoundingClientRect();
-    tableWidth.current = tableBCR.width;
-    tableHeight.current = tableBCR.height;
-
-    onMounted(tableBCR);
+    tableBCR.current = tableElRef.current.getBoundingClientRect();
+    onMounted(tableBCR.current);
   }, [onMounted]);
 
   useEffect(() => {
     let posX = mousePosition.x;
-    if (mousePosition.x > tableWidth.current) {
+    if (mousePosition.x > tableBCR.current.width) {
       outArea();
-      posX = tableWidth.current;
+      posX = tableBCR.current.width;
     }
 
-    let col = parseInt(posX / (tableWidth.current / 7));
+    let col = parseInt(posX / (tableBCR.current.width / 7));
     col = col === 7 ? 6 : col;
     setCurrentCol(col);
 
@@ -253,7 +268,7 @@ const CalendarGridTable = ({
                 <TaskBlockSolid
                   {...block}
                   key={idx}
-                  outerHeight={tableHeight.current}
+                  outerHeight={tableBCR.current.height}
                   onActive={activeBlock}
                   onDisactive={disactiveBlock}
                   onPickUp={handleBlockPickUp}
@@ -265,11 +280,12 @@ const CalendarGridTable = ({
           ((index === activedCol.current) &
             (tempBlockHeight > CRITICAL_BLOCK_HEIGHT)) ? (
             <TaskBlock
+              ref={tempBlockRef}
               key={-1}
               date={week[activedCol.current].clone()}
               top={tempBlockTop}
               height={tempBlockHeight}
-              outerHeight={tableHeight.current}
+              outerHeight={tableBCR.current.height}
               moving={isMoving}
               resizing={isDrawing}
               finishMoving={finishMoving}
@@ -299,7 +315,6 @@ const CalendarGridTable = ({
         <p>{`col: ${currentCol}`}</p>
         <p>{`tempBlockTop: ${tempBlockTop}`}</p>
         <p>{`tempBlockHeight: ${tempBlockHeight}`}</p>
-        <p>{`tableHeight: ${tableHeight.current}`}</p>
       </div> */}
     </Container>
   );

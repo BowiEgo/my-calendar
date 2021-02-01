@@ -8,7 +8,7 @@ const Portal = function ({ children, container }, ref) {
   return createPortal(children, container || document.body);
 };
 
-const Modal = ({ isOpen, container, onClickOutside, children }) => {
+const Modal = ({ isOpen, container, left, onClickOutside, children }) => {
   const childRef = useRef();
 
   useClickOutside(childRef, () => {
@@ -31,15 +31,15 @@ const Modal = ({ isOpen, container, onClickOutside, children }) => {
 
   return (
     <Portal container={container}>
-      {isOpen && <Container>{child}</Container>}
+      {isOpen && <Container left={left}>{child}</Container>}
     </Portal>
   );
 };
 
 const Container = styled.div`
   position: fixed;
-  top: 50%;
-  left: 50%;
+  top: 45%;
+  left: ${props => props.left + 'px' || 0};
   z-index: 9999;
 `;
 

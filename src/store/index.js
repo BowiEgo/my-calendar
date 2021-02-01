@@ -3,6 +3,7 @@ const CHANGE_WEEK_SWITCH_STATUS = 'CHANGE_WEEK_SWITCH_STATUS';
 
 const initState = {
   isTaskEditorOpen: false,
+  taskEditorPosition: 0,
   weekSwitchStatus: 'static',
 };
 
@@ -11,6 +12,7 @@ const reducer = (state = initState, action) => {
     // 切换任务编辑弹窗是否显示
     case CHANGE_IS_TASK_EDITOR_OPEN:
       state.isTaskEditorOpen = action.payload.isTaskEditorOpen;
+      state.taskEditorPosition = action.payload.taskEditorPosition || 0;
       return state;
 
     // 切换上下周动画状态

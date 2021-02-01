@@ -14,6 +14,7 @@ const TaskBlockSolid = props => {
     onClick,
   } = props;
 
+  const blockRef = useRef();
   const moving = useRef(false);
 
   useEffect(() => {
@@ -44,7 +45,7 @@ const TaskBlockSolid = props => {
   };
 
   const handleClick = e => {
-    onClick(id);
+    onClick(id, blockRef.current);
   };
 
   const defaultOptions = {
@@ -64,7 +65,7 @@ const TaskBlockSolid = props => {
 
   return (
     <div {...longPressEvent}>
-      <TaskBlock {...props} moving={moving.current}></TaskBlock>
+      <TaskBlock {...props} moving={moving.current} ref={blockRef}></TaskBlock>
     </div>
   );
 };
