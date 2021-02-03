@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import styled, { ThemeProvider } from 'styled-components';
 import { main } from './themes';
 // import { ChevronLeft, ChevronRight, MessageSquare } from 'react-feather';
@@ -11,17 +12,33 @@ import {
 } from './widgets';
 
 function App() {
-  const [currentDate, setCurrentDate] = useState();
-  const [week, setWeek] = useState([]);
+  console.log('app-update');
   const [type, setType] = useState('week');
   const [isVisible, setIsVisible] = useState(false);
 
   const rootElRef = useRef();
   const calendarElRef = useRef();
 
+  const selectedDate = useSelector(state => state.selectedDate);
+  const selectedWeek = useSelector(state => state.selectedWeek);
+
+  console.warn('app-update-1', selectedDate, selectedWeek);
+
+  useState(() => {
+    console.log('before-mounted');
+  });
+
   useEffect(() => {
     console.log(rootElRef.current);
   }, []);
+
+  function changeSelectedDate(unix) {
+    console.log('changeSelectedDate', unix);
+  }
+
+  function changeWeek(week) {
+    console.log('changeWeek', week);
+  }
 
   return (
     <ThemeProvider theme={main}>
@@ -30,34 +47,13 @@ function App() {
           <NavBar></NavBar>
           <CalendarType changeType={setType}></CalendarType>
           <CalendarGrid
-            selectedDate={currentDate}
-            week={week}
+            selectedDate={selectedDate}
+            week={selectedWeek}
             rootContainer={rootElRef.current}
-            // onMounted={handleGridMounted}
-            // onScroll={handleGridScroll}
           ></CalendarGrid>
         </AppContent>
         <CalendarBar>
-          {/* <div className="button-group">
-            <div className="flex-row">
-              <button
-                className="button circle prev-button"
-                onClick={() => prevWeek()}
-              >
-                <ChevronLeft color="grey" size={20}></ChevronLeft>
-              </button>
-              <button
-                className="button circle next-button"
-                onClick={() => nextWeek()}
-              >
-                <ChevronRight color="grey" size={20}></ChevronRight>
-              </button>
-            </div>
-          </div> */}
           <UserComp>
-            <div className="message">
-              {/* <MessageSquare color="grey" size={20}></MessageSquare> */}
-            </div>
             <UserPic>
               <img
                 alt="avatar"
@@ -68,8 +64,8 @@ function App() {
           <ScrollContainer>
             <Calendar
               ref={calendarElRef}
-              change={setCurrentDate}
-              changeWeek={setWeek}
+              change={changeSelectedDate}
+              changeWeek={changeWeek}
             ></Calendar>
 
             <Notification></Notification>

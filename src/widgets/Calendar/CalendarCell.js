@@ -1,49 +1,58 @@
-import { useContext } from 'react';
+import { memo, useMemo, useRef, useContext, useEffect } from 'react';
 import styled, { ThemeContext } from 'styled-components';
 import moment from 'moment';
 
-const CalendarCell = props => {
-  const themeContext = useContext(ThemeContext);
+const CalendarCell = memo(
+  ({ unix, isToday, isCurrentMonth, isActive, onClick }) => {
+    console.log('calendar-cell-update');
 
-  const { date } = props;
+    // context
+    const themeContext = useContext(ThemeContext);
 
-  if (!date) {
-    return <div />;
-  }
+    // memo
+    const date = useMemo(() => moment(+unix), [unix]);
+    const backgroundColor = useMemo(() => {
+      if (isActive) {
+        return themeContext.primaryColor;
+      } else if (isToday) {
+        return themeContext.hightlightColor;
+      } else {
+        return 'inherit';
+      }
+    }, [isActive, isToday]);
 
-  const today = moment().startOf('day').clone();
+    const textColor = useMemo(() => {
+      if (isActive || isToday) {
+        return 'white';
+      } else if (!isCurrentMonth) {
+        return themeContext.disabledColor;
+      } else {
+        return themeContext.textColor;
+      }
+    }, [isCurrentMonth, isActive, isToday]);
 
-  // compute styles
-  let backgroundColor = 'inherit';
-  let textColor = themeContext.textColor;
-
-  if (date.month() !== props.startDay.month()) {
-    textColor = themeContext.disabledColor;
-  }
-
-  if (today.isSame(date)) {
-    backgroundColor = themeContext.hightlightColor;
-    textColor = 'white';
-  }
-
-  if (props.isActive) {
-    backgroundColor = themeContext.primaryColor;
-    textColor = 'white';
-  }
-
-  // functions
-  const handleClick = () => {
-    props.onClick(date);
-  };
-
-  return (
-    <Container onClick={() => handleClick()}>
-      <Cell backgroundColor={backgroundColor} color={textColor}>
-        {date.date()}
-      </Cell>
-    </Container>
-  );
-};
+    // render
+    return unix ? (
+      <Container onClick={() => onClick(unix)}>
+        <Cell backgroundColor={backgroundColor} color={textColor}>
+          {date.date()}
+        </Cell>
+      </Container>
+    ) : (
+      <div />
+    );
+  },
+  (prev, next) => {
+    const keys = ['unix', 'isToday', 'isCurrentMonth', 'isActive'];
+    for (let i = 0; i < keys.length; i++) {
+      let key = keys[i];
+      if (prev[key] !== next[key]) {
+        return false;
+      }
+    }
+    return true;
+  },
+);
 
 const Container = styled.div`
   cursor: pointer;

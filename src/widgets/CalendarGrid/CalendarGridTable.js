@@ -17,6 +17,8 @@ const CRITICAL_BLOCK_HEIGHT = 4;
 const MODAL_WIDTH = 180;
 
 const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
+  console.log('table-update');
+
   const [blockList, setBlockList] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
@@ -42,8 +44,8 @@ const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
     dispatch({
       type: 'CHANGE_IS_TASK_EDITOR_OPEN',
       payload: {
-        isTaskEditorOpen: true,
-        taskEditorPosition: offsetX,
+        isOpen: true,
+        position: offsetX,
       },
     });
   };

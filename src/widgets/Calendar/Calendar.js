@@ -1,134 +1,182 @@
 import {
   useState,
+  useRef,
   useEffect,
+  useContext,
+  useCallback,
   useImperativeHandle,
   forwardRef,
-  useContext,
 } from 'react';
+import { useImmer } from 'use-immer';
 import styled, { ThemeContext } from 'styled-components';
-import moment from 'moment';
+import moment, { unix } from 'moment';
 import { ChevronLeft, ChevronRight } from 'react-feather';
 import { Button, ButtonGroup } from '../../components';
 import { CalendarCell } from '../index';
 
+const nowUnix = new Date().getTime();
+const calendarTmp = getCalendar(nowUnix);
+const startOfMonthTmp = +moment(nowUnix).startOf('month').format('x');
+const currentWeekIndexTmp = getRow(nowUnix, startOfMonthTmp);
+
+const initialState = {
+  startOfMonth: startOfMonthTmp,
+  startOfWeek: +moment(nowUnix).startOf('week').format('x'),
+  calendar: calendarTmp,
+  currentWeekIndex: currentWeekIndexTmp,
+  selectedDate: null,
+};
+
 const Calendar = ({ change, changeWeek }, ref) => {
+  console.warn('calendar-update');
+
+  // context
   const themeContext = useContext(ThemeContext);
 
-  const [startOfMonth, setStartOfMonth] = useState(
-    moment().startOf('month').clone(),
-  );
-  const [startOfWeek, setStartOfWeek] = useState(
-    moment().startOf('week').clone(),
-  );
-  const [calendar, setCalendar] = useState(getCalendar(moment()));
-  const [currentWeek, setCurrentWeek] = useState(
-    getRow(moment(), startOfMonth),
-  );
-  const [currentDate, setCurrentDate] = useState(
-    calendar[currentWeek][moment().weekday()],
-  );
+  // state
+  const [
+    { selectedDate, startOfMonth, startOfWeek, calendar, currentWeekIndex },
+    updateState,
+  ] = useImmer(initialState);
 
-  useEffect(() => {
-    change(currentDate);
-    if (startOfMonth.isSame(currentDate.clone().startOf('month'))) {
-      changeWeek(calendar[currentWeek]);
-    }
-  });
+  // ref
+  const todayUnix = useRef(+moment().startOf('day').format('x'));
 
-  const handleClickCell = date => {
-    const d = date.clone();
-    const row = getRow(d, startOfMonth);
-    const weekStart = d.clone().startOf('week').clone();
+  // method
+  const handleClickCell = unix => {
+    console.warn('handleClickCell-0', unix, selectedDate);
+    if (unix === selectedDate) return;
 
-    setCurrentDate(calendar[row][d.weekday()]);
+    const d = moment(unix);
+    const row = getRow(unix, startOfMonth);
+
+    updateState(draft => {
+      draft.selectedDate = calendar[row][d.weekday()];
+    });
+    change(selectedDate);
+
+    const weekStart = d.clone().startOf('week');
 
     if (!weekStart.isSame(startOfWeek)) {
+      console.warn('calendar-update-2');
+      updateState(draft => {
+        draft.startOfWeek = +weekStart.format('x');
+      });
+      updateState(draft => {
+        draft.currentWeekIndex = row;
+      });
       changeWeek(calendar[row]);
-      setStartOfWeek(weekStart);
-      setCurrentWeek(row);
     }
   };
 
   const prevMonth = () => {
-    setStartOfMonth(startOfMonth.subtract(1, 'month').clone());
-    setCalendar(getCalendar(startOfMonth));
+    setStartOfMonth(
+      draft =>
+        (draft.startOfMonth = +moment(startOfMonth)
+          .subtract(1, 'month')
+          .format('x')),
+    );
+    setCalendar(draft => {
+      draft.calendar = getCalendar(startOfMonth);
+    });
   };
 
   const nextMonth = () => {
-    setStartOfMonth(startOfMonth.add(1, 'month').clone());
-    setCalendar(getCalendar(startOfMonth));
+    setStartOfMonth(draft => {
+      draft.startOfMonth = +moment(startOfMonth).add(1, 'month').format('x');
+    });
+    setCalendar(draft => {
+      draft.calendar = getCalendar(startOfMonth);
+    });
   };
 
   useImperativeHandle(ref, () => ({
     prevWeek: () => {
-      if (currentWeek > 0) {
-        setCurrentWeek(currentWeek - 1);
+      if (currentWeekIndex > 0) {
+        setCurrentWeek(draft => draft.currentWeekIndex--);
       }
     },
     nextWeek: () => {
-      if (currentWeek < 5) {
-        setCurrentWeek(currentWeek + 1);
+      if (currentWeekIndex < 5) {
+        setCurrentWeek(draft => draft.currentWeekIndex++);
       }
     },
   }));
 
-  const wl = ['日', '一', '二', '三', '四', '五', '六'].map((name, idx) => {
-    return (
-      <Th as="th" key={idx}>
-        {name}
-      </Th>
-    );
-  });
+  useEffect(() => {
+    if (moment(startOfMonth).isSame(moment(selectedDate).startOf('month'))) {
+      changeWeek(calendar[currentWeekIndex]);
+    }
+  }, [startOfMonth, selectedDate, calendar, currentWeekIndex, changeWeek]);
 
-  const cl = calendar.map((week, row) => {
+  const renderTableHead = () => {
     return (
-      <tr key={row}>
-        {week.map((date, col) => {
+      <tr>
+        {['日', '一', '二', '三', '四', '五', '六'].map((name, idx) => {
           return (
-            <Td key={col}>
-              <CalendarCell
-                date={date}
-                isActive={currentDate.isSame(date)}
-                startDay={startOfMonth}
-                onClick={handleClickCell}
-              />
-            </Td>
+            <Th as="th" key={idx}>
+              {name}
+            </Th>
           );
         })}
       </tr>
     );
-  });
+  };
+
+  const renderTableBody = () =>
+    calendar.map((week, row) => {
+      return (
+        <tr key={row}>
+          {week.map((unix, col) => {
+            const isToday = unix === todayUnix.current;
+            const isCurrentMonth =
+              +moment(unix).startOf('month').format('x') === startOfMonth;
+            const isActive = unix === selectedDate;
+            return (
+              <Td key={col}>
+                <CalendarCell
+                  unix={unix}
+                  isToday={isToday}
+                  isCurrentMonth={isCurrentMonth}
+                  isActive={isActive}
+                  onClick={handleClickCell}
+                />
+              </Td>
+            );
+          })}
+        </tr>
+      );
+    });
 
   return (
     <Container>
       <CalendarHeader>
-        <MonthHeader>{startOfMonth.format('YYYY年 MM月')}</MonthHeader>
+        <MonthHeader>{moment(startOfMonth).format('YYYY年 MM月')}</MonthHeader>
+
         <ButtonGroup width="66">
           <MonthButton width={30} border onClick={() => prevMonth()}>
             <ChevronLeft color={themeContext.textColor} size={14} />
           </MonthButton>
-
           <MonthButton width={30} border onClick={() => nextMonth()}>
             <ChevronRight color={themeContext.textColor} size={14} />
           </MonthButton>
         </ButtonGroup>
       </CalendarHeader>
-      <div style={{ position: 'relative' }}>
-        <WeekBg translateY={currentWeek * 36 + 1 + 'px'}></WeekBg>
-        <table>
-          <thead>
-            <tr>{wl}</tr>
-          </thead>
 
-          <tbody>{cl}</tbody>
+      <div style={{ position: 'relative' }}>
+        <WeekBg translateY={currentWeekIndex * 36 + 1 + 'px'}></WeekBg>
+        <table>
+          <thead>{renderTableHead()}</thead>
+          <tbody>{renderTableBody()}</tbody>
         </table>
       </div>
     </Container>
   );
 };
 
-function getCalendar(date) {
+function getCalendar(unix) {
   let calendar = [];
+  const date = moment(unix);
 
   const startDay = date.clone().startOf('month').startOf('week');
   const endDay = date.clone().endOf('month').endOf('week');
@@ -139,17 +187,18 @@ function getCalendar(date) {
     calendar.push(
       Array(7)
         .fill(0)
-        .map(() => tempDate.add(1, 'day').clone()),
+        .map(() => +tempDate.add(1, 'day').format('x')),
     );
   }
 
   return calendar;
 }
 
-function getRow(date, startDay) {
-  startDay = startDay.clone().startOf('month').startOf('week');
+function getRow(unix, startDayUnix) {
+  console.warn('getRow', unix, startDayUnix);
+  const startDay = moment(startDayUnix).startOf('month').startOf('week');
   let row = Math.ceil(
-    (date.clone().startOf('day').diff(startDay, 'days') + 0.1) / 7,
+    (moment(unix).startOf('day').diff(startDay, 'days') + 0.1) / 7,
   );
   row = row <= 0 ? 0 : row - 1;
   return row;
@@ -186,7 +235,11 @@ const MonthButton = styled(Button)`
   justify-content: center;
 `;
 
-const WeekBg = styled.div`
+const WeekBg = styled.div.attrs(props => ({
+  style: {
+    transform: `translateY(${props.translateY})`,
+  },
+}))`
   position: absolute;
   top: 37px;
   left: 0;
@@ -196,7 +249,6 @@ const WeekBg = styled.div`
   background-color: ${props => props.theme.primaryColorSecondary};
   transition: transform ease 0.1s;
   z-index: -1;
-  transform: translateY(${props => props.translateY});
 `;
 
 const Td = styled.td`

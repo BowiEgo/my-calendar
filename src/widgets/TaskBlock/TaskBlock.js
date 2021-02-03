@@ -22,6 +22,7 @@ const TaskBlock = forwardRef(
     },
     ref,
   ) => {
+    console.log('block-update');
     // States
     const [isDragging, setIsDragging] = useState(false);
 

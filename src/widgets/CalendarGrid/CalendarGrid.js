@@ -21,6 +21,7 @@ import useMousePosition from '../../utils/useMousePosition';
 let bid = 0;
 
 const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
+  console.log('grid-update');
   // Props
   const weekdaysShort = moment.weekdaysShort();
 
@@ -57,7 +58,7 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
     dispatch({
       type: 'CHANGE_IS_TASK_EDITOR_OPEN',
       payload: {
-        isTaskEditorOpen: false,
+        isOpen: false,
       },
     });
   };
@@ -90,7 +91,7 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
         dispatch({
           type: 'CHANGE_WEEK_SWITCH_STATUS',
           payload: {
-            weekSwitchStatus: 'static',
+            status: 'static',
           },
         });
       }, 300);
@@ -100,7 +101,8 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
   }, [weekSwitchStatus, control, dispatch]);
 
   const renderWeekList = () => {
-    return week.map((date, idx) => {
+    return week.map((unix, idx) => {
+      const date = moment(unix);
       return (
         <motion.div
           key={idx}
@@ -109,7 +111,7 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
           style={{ height: '100%', flex: 1 }}
         >
           <WeekCell
-            isActive={date.isSame(selectedDate)}
+            isActive={date.isSame(moment(selectedDate))}
             isToday={date.isSame(moment().startOf('day'))}
           >
             <h5>{weekdaysShort[date.weekday()]}</h5>
