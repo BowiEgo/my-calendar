@@ -1,16 +1,16 @@
 import styled from 'styled-components';
-import { BackForwardSwitch, TypeSwitch } from './index.js';
+import { Switch, BackForwardSwitch } from '../../components';
 
-const CalendarType = props => {
+const CalendarType = ({ onChange, onPrev, onNext }) => {
   const handleChangeType = type => {
-    props.changeType(type);
+    onChange(type);
   };
 
   return (
     <Container>
       <h2>2020年 12月</h2>
-      <TypeSwitch changeType={handleChangeType}></TypeSwitch>
-      <BackForwardSwitch></BackForwardSwitch>
+      <Switch changeType={handleChangeType}></Switch>
+      <BackForwardSwitch onPrev={onPrev} onNext={onNext}></BackForwardSwitch>
     </Container>
   );
 };

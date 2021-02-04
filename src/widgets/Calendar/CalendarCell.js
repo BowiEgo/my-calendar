@@ -4,13 +4,12 @@ import moment from 'moment';
 
 const CalendarCell = memo(
   ({ unix, isToday, isCurrentMonth, isActive, onClick }) => {
-    console.log('calendar-cell-update');
-
     // context
     const themeContext = useContext(ThemeContext);
 
     // memo
     const date = useMemo(() => moment(+unix), [unix]);
+    const isRound = useMemo(() => isActive || isToday, [isActive, isToday]);
     const backgroundColor = useMemo(() => {
       if (isActive) {
         return themeContext.primaryColor;
@@ -34,7 +33,11 @@ const CalendarCell = memo(
     // render
     return unix ? (
       <Container onClick={() => onClick(unix)}>
-        <Cell backgroundColor={backgroundColor} color={textColor}>
+        <Cell
+          backgroundColor={backgroundColor}
+          color={textColor}
+          round={isRound}
+        >
           {date.date()}
         </Cell>
       </Container>
@@ -64,6 +67,7 @@ const Cell = styled.div.attrs(props => ({
   style: {
     backgroundColor: props.backgroundColor,
     color: props.color,
+    borderRadius: props.round ? '8px' : 0,
   },
 }))`
   width: 100%;
@@ -71,8 +75,6 @@ const Cell = styled.div.attrs(props => ({
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-
   font-family: 'Roboto';
 `;
 

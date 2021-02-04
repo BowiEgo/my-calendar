@@ -1,12 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment, forwardRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import {
-  motion,
-  AnimatePresence,
-  animate,
-  useAnimation,
-  useMotionValue,
-} from 'framer-motion';
+import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import moment from 'moment';
 import { Calendar as CalendarIcon } from 'react-feather';
@@ -16,34 +10,76 @@ import {
   CalendarGridPointer as GridPointer,
   TaskEditor,
 } from '../index';
+import GridMotion from './GridMotion';
 import useMousePosition from '../../utils/useMousePosition';
+import usePrevious from '../../utils/usePrevious';
 
 let bid = 0;
 
-const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
+const CalendarGrid = ({
+  selectedDate,
+  week,
+  scrollTop,
+  rootContainer,
+  onMotionFinished,
+}) => {
   console.log('grid-update');
-  // Props
-  const weekdaysShort = moment.weekdaysShort();
 
-  const [labelWidth, setLabelWidth] = useState(0);
-
+  // ref
+  const weekdaysShort = useRef(moment.weekdaysShort());
   const containerRef = useRef();
   const scrollRef = useRef();
   const labelElRef = useRef();
   const motionTable = useRef();
   const tableHeight = useRef(0);
   const tableWidth = useRef(0);
+  const labelWidth = useRef(0);
+  const weekListRef = useRef(Array(7).fill(useRef()));
+
+  for (let i in 7) {
+    weekListRef.current[i].current = i;
+  }
+
+  console.log('weekListRef', weekListRef);
+
+  // previous
+  const oldWeekValue = usePrevious(week);
 
   // store
-  const weekSwitchStatus = useSelector(state => state.weekSwitchStatus);
   const isTaskEditorOpen = useSelector(state => state.isTaskEditorOpen);
   const taskEditorPosition = useSelector(state => state.taskEditorPosition);
-
   const dispatch = useDispatch();
 
-  // animate
-  const control = useAnimation();
+  // mounted
+  useEffect(() => {
+    labelWidth.current = labelElRef.current.getBoundingClientRect().width;
+  }, []);
 
+  const { mousePosition, bind: mouseEvent } = useMousePosition(pos => {
+    let posX = pos.x - labelWidth.current;
+
+    return {
+      x: posX < 0 ? 0 : posX,
+      y: pos.y,
+    };
+  });
+
+  useEffect(() => {
+    if ((week !== undefined) & (oldWeekValue !== undefined)) {
+      if (week[0] < oldWeekValue[0]) {
+        console.log('prev');
+        weekListRef.current.forEach(item => item.current.prev());
+      } else if (week[0] > oldWeekValue[0]) {
+        console.log('next');
+        weekListRef.current.forEach(item => {
+          console.log('99999', item.current);
+          item.current.next();
+        });
+      }
+    }
+  }, [week]);
+
+  // method
   const handleTableMounted = tableBCR => {
     tableHeight.current = tableBCR.height;
     tableWidth.current = tableBCR.width;
@@ -63,63 +99,9 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
     });
   };
 
-  useEffect(() => {
-    setLabelWidth(labelElRef.current.getBoundingClientRect().width);
-  }, []);
-
-  useEffect(() => {
-    if (weekSwitchStatus !== 'static') {
-      if (weekSwitchStatus === 'prev') {
-        control.set({
-          opacity: 0,
-          translateX: -80,
-        });
-        control.start({
-          opacity: 1,
-          translateX: 0,
-        });
-      } else {
-        control.set({ opacity: 0, translateX: 80 });
-        control.start({
-          opacity: 1,
-          translateX: 0,
-        });
-      }
-      // setIsVisible(true);
-
-      setTimeout(() => {
-        dispatch({
-          type: 'CHANGE_WEEK_SWITCH_STATUS',
-          payload: {
-            status: 'static',
-          },
-        });
-      }, 300);
-    } else {
-      // setIsVisible(false);
-    }
-  }, [weekSwitchStatus, control, dispatch]);
-
-  const renderWeekList = () => {
-    return week.map((unix, idx) => {
-      const date = moment(unix);
-      return (
-        <motion.div
-          key={idx}
-          animate={control}
-          transition={{ duration: 0.3 }}
-          style={{ height: '100%', flex: 1 }}
-        >
-          <WeekCell
-            isActive={date.isSame(moment(selectedDate))}
-            isToday={date.isSame(moment().startOf('day'))}
-          >
-            <h5>{weekdaysShort[date.weekday()]}</h5>
-            <span>{date.date()}</span>
-          </WeekCell>
-        </motion.div>
-      );
-    });
+  const handleMotionFinished = () => {
+    console.warn('animate-finished!!!!');
+    onMotionFinished && onMotionFinished();
   };
 
   // TimeLabel
@@ -143,15 +125,6 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
     );
   };
 
-  const { mousePosition, bind: mouseEvent } = useMousePosition(pos => {
-    let posX = pos.x - labelWidth;
-
-    return {
-      x: posX < 0 ? 0 : posX,
-      y: pos.y,
-    };
-  });
-
   return (
     <GridContainer ref={containerRef}>
       <GridWeekContainer>
@@ -161,7 +134,13 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
               <CalendarIcon color="grey" size="20"></CalendarIcon>
             </WeekLabel>
           </WeekLabelContainer>
-          {renderWeekList()}
+
+          <WeekList
+            ref={weekListRef}
+            week={week}
+            selectedDate={selectedDate}
+            weekdaysShort={weekdaysShort.current}
+          ></WeekList>
         </GridWeek>
       </GridWeekContainer>
       <GridContentScroll {...mouseEvent} ref={scrollRef}>
@@ -172,18 +151,13 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
             tableWidth={tableWidth.current}
             onInitialed={handlePointerInitialed}
           ></GridPointer>
-          <motion.div
-            animate={control}
-            transition={{ duration: 0.3 }}
-            style={{ height: '100%', flex: 1 }}
-            ref={motionTable}
-          >
+          <GridMotion resolveFn={handleMotionFinished}>
             <GridTable
               week={week}
               mousePosition={mousePosition}
               onMounted={handleTableMounted}
             ></GridTable>
-          </motion.div>
+          </GridMotion>
         </GridContent>
       </GridContentScroll>
       <Modal
@@ -197,6 +171,28 @@ const CalendarGrid = ({ selectedDate, week, scrollTop, rootContainer }) => {
     </GridContainer>
   );
 };
+
+// WeekList
+const WeekList = forwardRef(({ week, selectedDate, weekdaysShort }, ref) => {
+  return (
+    <Fragment>
+      {week.map((unix, idx) => {
+        const date = moment(unix);
+        return (
+          <GridMotion key={idx} ref={ref.current[idx]}>
+            <WeekCell
+              isActive={date.isSame(moment(selectedDate))}
+              isToday={date.isSame(moment().startOf('day'))}
+            >
+              <h5>{weekdaysShort[date.weekday()]}</h5>
+              <span>{date.date()}</span>
+            </WeekCell>
+          </GridMotion>
+        );
+      })}
+    </Fragment>
+  );
+});
 
 const GridContainer = styled.div`
   display: flex;

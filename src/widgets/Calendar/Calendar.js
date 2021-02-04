@@ -1,7 +1,7 @@
 import {
-  useState,
   useRef,
   useEffect,
+  useMemo,
   useContext,
   useCallback,
   useImperativeHandle,
@@ -15,99 +15,122 @@ import { Button, ButtonGroup } from '../../components';
 import { CalendarCell } from '../index';
 
 const nowUnix = new Date().getTime();
-const calendarTmp = getCalendar(nowUnix);
-const startOfMonthTmp = +moment(nowUnix).startOf('month').format('x');
-const currentWeekIndexTmp = getRow(nowUnix, startOfMonthTmp);
+const nowMoment = moment(nowUnix);
+const startOfCurrentMonthTmp = +nowMoment.clone().startOf('month').format('x');
+const {
+  calendar: calendarTmp,
+  weekIndex: indexOfSelectedWeekTmp,
+} = getCalendar(nowUnix, +nowMoment.clone().startOf('day').format('x'));
 
 const initialState = {
-  startOfMonth: startOfMonthTmp,
-  startOfWeek: +moment(nowUnix).startOf('week').format('x'),
   calendar: calendarTmp,
-  currentWeekIndex: currentWeekIndexTmp,
-  selectedDate: null,
+  startOfSelectedCalendar: null,
+  indexOfSelectedWeek: indexOfSelectedWeekTmp,
 };
 
-const Calendar = ({ change, changeWeek }, ref) => {
-  console.warn('calendar-update');
-
+const Calendar = forwardRef(({ onChange, onChangeWeek }, ref) => {
   // context
   const themeContext = useContext(ThemeContext);
 
   // state
   const [
-    { selectedDate, startOfMonth, startOfWeek, calendar, currentWeekIndex },
+    { calendar, startOfSelectedCalendar, indexOfSelectedWeek },
     updateState,
   ] = useImmer(initialState);
 
   // ref
   const todayUnix = useRef(+moment().startOf('day').format('x'));
+  const selectedDate = useRef();
+  const startOfCurrentMonth = useRef(startOfCurrentMonthTmp);
+  const startOfSelectedWeek = useRef(calendarTmp[indexOfSelectedWeekTmp][0]);
+
+  useEffect(() => {
+    console.log(
+      '0101010110101',
+      calendar,
+      indexOfSelectedWeek,
+      calendar[indexOfSelectedWeek],
+    );
+    if (indexOfSelectedWeek > -1) {
+      onChangeWeek && onChangeWeek(calendar[indexOfSelectedWeek]);
+    }
+  }, [indexOfSelectedWeek, onChangeWeek]);
 
   // method
-  const handleClickCell = unix => {
-    console.warn('handleClickCell-0', unix, selectedDate);
-    if (unix === selectedDate) return;
-
-    const d = moment(unix);
-    const row = getRow(unix, startOfMonth);
-
-    updateState(draft => {
-      draft.selectedDate = calendar[row][d.weekday()];
-    });
-    change(selectedDate);
-
-    const weekStart = d.clone().startOf('week');
-
-    if (!weekStart.isSame(startOfWeek)) {
-      console.warn('calendar-update-2');
-      updateState(draft => {
-        draft.startOfWeek = +weekStart.format('x');
-      });
-      updateState(draft => {
-        draft.currentWeekIndex = row;
-      });
-      changeWeek(calendar[row]);
-    }
-  };
-
   const prevMonth = () => {
-    setStartOfMonth(
-      draft =>
-        (draft.startOfMonth = +moment(startOfMonth)
-          .subtract(1, 'month')
-          .format('x')),
-    );
-    setCalendar(draft => {
-      draft.calendar = getCalendar(startOfMonth);
-    });
+    startOfCurrentMonth.current = +moment(startOfCurrentMonth.current)
+      .subtract(1, 'month')
+      .format('x');
+
+    updateCalendar();
   };
 
   const nextMonth = () => {
-    setStartOfMonth(draft => {
-      draft.startOfMonth = +moment(startOfMonth).add(1, 'month').format('x');
-    });
-    setCalendar(draft => {
-      draft.calendar = getCalendar(startOfMonth);
+    startOfCurrentMonth.current = +moment(startOfCurrentMonth.current)
+      .add(1, 'month')
+      .format('x');
+
+    updateCalendar();
+  };
+
+  const updateCalendar = () => {
+    const { calendar, weekIndex } = getCalendar(
+      startOfCurrentMonth.current,
+      startOfSelectedWeek.current,
+    );
+
+    updateState(draft => {
+      draft.indexOfSelectedWeek = weekIndex;
+      draft.calendar = calendar;
     });
   };
 
+  const handleCellClicked = useCallback(
+    unix => {
+      if (unix === selectedDate.current) return;
+      selectedDate.current = unix;
+      onChange && onChange(unix);
+
+      const weekStartUnix = +moment(unix).startOf('week').format('x');
+      if (weekStartUnix !== startOfSelectedWeek.current) {
+        const row = getRow(unix, startOfCurrentMonth.current);
+
+        startOfSelectedWeek.current = weekStartUnix;
+        updateState(draft => {
+          draft.startOfSelectedCalendar = calendar[0][0];
+          draft.indexOfSelectedWeek = row;
+        });
+      }
+    },
+    [calendar, onChange, updateState],
+  );
+
   useImperativeHandle(ref, () => ({
     prevWeek: () => {
-      if (currentWeekIndex > 0) {
-        setCurrentWeek(draft => draft.currentWeekIndex--);
+      if (indexOfSelectedWeek > 0) {
+        updateState(draft => {
+          draft.indexOfSelectedWeek--;
+        });
+      } else {
+        startOfSelectedWeek.current = +moment(calendar[0][0])
+          .subtract(1, 'week')
+          .format('x');
+        prevMonth();
       }
     },
     nextWeek: () => {
-      if (currentWeekIndex < 5) {
-        setCurrentWeek(draft => draft.currentWeekIndex++);
+      if (indexOfSelectedWeek < 5) {
+        updateState(draft => {
+          draft.indexOfSelectedWeek++;
+        });
+      } else {
+        startOfSelectedWeek.current = +moment(calendar[5][0])
+          .add(1, 'week')
+          .format('x');
+        nextMonth();
       }
     },
   }));
-
-  useEffect(() => {
-    if (moment(startOfMonth).isSame(moment(selectedDate).startOf('month'))) {
-      changeWeek(calendar[currentWeekIndex]);
-    }
-  }, [startOfMonth, selectedDate, calendar, currentWeekIndex, changeWeek]);
 
   const renderTableHead = () => {
     return (
@@ -130,8 +153,9 @@ const Calendar = ({ change, changeWeek }, ref) => {
           {week.map((unix, col) => {
             const isToday = unix === todayUnix.current;
             const isCurrentMonth =
-              +moment(unix).startOf('month').format('x') === startOfMonth;
-            const isActive = unix === selectedDate;
+              +moment(unix).startOf('month').format('x') ===
+              startOfCurrentMonth.current;
+            const isActive = unix === selectedDate.current;
             return (
               <Td key={col}>
                 <CalendarCell
@@ -139,7 +163,7 @@ const Calendar = ({ change, changeWeek }, ref) => {
                   isToday={isToday}
                   isCurrentMonth={isCurrentMonth}
                   isActive={isActive}
-                  onClick={handleClickCell}
+                  onClick={handleCellClicked}
                 />
               </Td>
             );
@@ -149,9 +173,11 @@ const Calendar = ({ change, changeWeek }, ref) => {
     });
 
   return (
-    <Container>
+    <Container ref={ref}>
       <CalendarHeader>
-        <MonthHeader>{moment(startOfMonth).format('YYYY年 MM月')}</MonthHeader>
+        <MonthHeader>
+          {moment(startOfCurrentMonth.current).format('YYYY年 MM月')}
+        </MonthHeader>
 
         <ButtonGroup width="66">
           <MonthButton width={30} border onClick={() => prevMonth()}>
@@ -164,7 +190,10 @@ const Calendar = ({ change, changeWeek }, ref) => {
       </CalendarHeader>
 
       <div style={{ position: 'relative' }}>
-        <WeekBg translateY={currentWeekIndex * 36 + 1 + 'px'}></WeekBg>
+        <WeekBg
+          visible={indexOfSelectedWeek > -1}
+          translateY={indexOfSelectedWeek * 36 + 1}
+        ></WeekBg>
         <table>
           <thead>{renderTableHead()}</thead>
           <tbody>{renderTableBody()}</tbody>
@@ -172,10 +201,12 @@ const Calendar = ({ change, changeWeek }, ref) => {
       </div>
     </Container>
   );
-};
+});
 
-function getCalendar(unix) {
+function getCalendar(unix, startOfWeekUnix) {
   let calendar = [];
+  let weekIndex = -1;
+  let idx = 0;
   const date = moment(unix);
 
   const startDay = date.clone().startOf('month').startOf('week');
@@ -187,15 +218,22 @@ function getCalendar(unix) {
     calendar.push(
       Array(7)
         .fill(0)
-        .map(() => +tempDate.add(1, 'day').format('x')),
+        .map(() => {
+          const d = +tempDate.add(1, 'day').format('x');
+          console.log('d', idx, d, startOfWeekUnix, d === startOfWeekUnix);
+          if (d === startOfWeekUnix) {
+            weekIndex = idx;
+          }
+          return d;
+        }),
     );
+    idx++;
   }
 
-  return calendar;
+  return { calendar, weekIndex };
 }
 
 function getRow(unix, startDayUnix) {
-  console.warn('getRow', unix, startDayUnix);
   const startDay = moment(startDayUnix).startOf('month').startOf('week');
   let row = Math.ceil(
     (moment(unix).startOf('day').diff(startDay, 'days') + 0.1) / 7,
@@ -237,7 +275,8 @@ const MonthButton = styled(Button)`
 
 const WeekBg = styled.div.attrs(props => ({
   style: {
-    transform: `translateY(${props.translateY})`,
+    display: props.visible ? 'block' : 'none',
+    transform: `translateY(${props.translateY}px)`,
   },
 }))`
   position: absolute;
@@ -263,4 +302,4 @@ const Th = styled(Td)`
   color: ${props => props.theme.textColorSecondary};
 `;
 
-export default forwardRef(Calendar);
+export default Calendar;

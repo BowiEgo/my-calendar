@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useImmer } from 'use-immer';
 import styled, { ThemeProvider } from 'styled-components';
 import { main } from './themes';
 // import { ChevronLeft, ChevronRight, MessageSquare } from 'react-feather';
@@ -13,16 +14,17 @@ import {
 
 function App() {
   console.log('app-update');
-  const [type, setType] = useState('week');
-  const [isVisible, setIsVisible] = useState(false);
+  // state
+  const [{ weekList }, updateState] = useImmer({ weekList: [] });
 
   const rootElRef = useRef();
   const calendarElRef = useRef();
 
+  // store
   const selectedDate = useSelector(state => state.selectedDate);
   const selectedWeek = useSelector(state => state.selectedWeek);
-
-  console.warn('app-update-1', selectedDate, selectedWeek);
+  const weekSwitchStatus = useSelector(state => state.weekSwitchStatus);
+  const dispatch = useDispatch();
 
   useState(() => {
     console.log('before-mounted');
@@ -32,26 +34,85 @@ function App() {
     console.log(rootElRef.current);
   }, []);
 
+  // method
   function changeSelectedDate(unix) {
-    console.log('changeSelectedDate', unix);
+    dispatch({
+      type: 'CHANGE_SELECTED_DATE',
+      payload: {
+        date: unix,
+      },
+    });
   }
 
-  function changeWeek(week) {
-    console.log('changeWeek', week);
+  function changeGridType(type) {
+    console.log('changeGridType', type);
   }
+
+  function changeWeekSwitchStatus(value) {
+    if (weekSwitchStatus !== 'static') {
+      return;
+    }
+    dispatch({
+      type: 'CHANGE_WEEK_SWITCH_STATUS',
+      payload: {
+        status: value,
+      },
+    });
+  }
+
+  function changeToPrev() {
+    changeWeekSwitchStatus('prev');
+    calendarElRef.current && calendarElRef.current.prevWeek();
+  }
+
+  function changeToNext() {
+    changeWeekSwitchStatus('next');
+    calendarElRef.current && calendarElRef.current.nextWeek();
+  }
+
+  const changeWeek = useCallback(
+    week => {
+      console.warn('changeWeek', week, selectedWeek);
+      if (week[0] & selectedWeek[0]) {
+        changeWeekSwitchStatus(selectedWeek[0] < week[0] ? 'prev' : 'next');
+      }
+      dispatch({
+        type: 'CHANGE_SELECTED_WEEK',
+        payload: {
+          week: week,
+        },
+      });
+    },
+    [dispatch],
+  );
+
+  const onGridAnimateFinished = () => {
+    dispatch({
+      type: 'CHANGE_WEEK_SWITCH_STATUS',
+      payload: {
+        status: 'static',
+      },
+    });
+  };
 
   return (
     <ThemeProvider theme={main}>
       <AppBody ref={rootElRef}>
         <AppContent>
           <NavBar></NavBar>
-          <CalendarType changeType={setType}></CalendarType>
+          <CalendarType
+            onChange={changeGridType}
+            onPrev={changeToPrev}
+            onNext={changeToNext}
+          ></CalendarType>
           <CalendarGrid
             selectedDate={selectedDate}
             week={selectedWeek}
             rootContainer={rootElRef.current}
+            onMotionFinished={onGridAnimateFinished}
           ></CalendarGrid>
         </AppContent>
+
         <CalendarBar>
           <UserComp>
             <UserPic>
@@ -61,15 +122,14 @@ function App() {
               ></img>
             </UserPic>
           </UserComp>
+
           <ScrollContainer>
             <Calendar
               ref={calendarElRef}
-              change={changeSelectedDate}
-              changeWeek={changeWeek}
+              onChange={changeSelectedDate}
+              onChangeWeek={changeWeek}
             ></Calendar>
-
             <Notification></Notification>
-
             <CalendarList></CalendarList>
           </ScrollContainer>
         </CalendarBar>
