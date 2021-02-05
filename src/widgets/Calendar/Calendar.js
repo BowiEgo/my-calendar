@@ -45,12 +45,6 @@ const Calendar = forwardRef(({ onChange, onChangeWeek }, ref) => {
   const startOfSelectedWeek = useRef(calendarTmp[indexOfSelectedWeekTmp][0]);
 
   useEffect(() => {
-    console.log(
-      '0101010110101',
-      calendar,
-      indexOfSelectedWeek,
-      calendar[indexOfSelectedWeek],
-    );
     if (indexOfSelectedWeek > -1) {
       onChangeWeek && onChangeWeek(calendar[indexOfSelectedWeek]);
     }
@@ -220,7 +214,6 @@ function getCalendar(unix, startOfWeekUnix) {
         .fill(0)
         .map(() => {
           const d = +tempDate.add(1, 'day').format('x');
-          console.log('d', idx, d, startOfWeekUnix, d === startOfWeekUnix);
           if (d === startOfWeekUnix) {
             weekIndex = idx;
           }

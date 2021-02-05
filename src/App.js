@@ -3,19 +3,22 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useImmer } from 'use-immer';
 import styled, { ThemeProvider } from 'styled-components';
 import { main } from './themes';
-// import { ChevronLeft, ChevronRight, MessageSquare } from 'react-feather';
+import { Modal } from './components';
 import {
   Calendar,
   CalendarGrid,
   CalendarList,
   CalendarType,
   NavBar,
+  TaskEditor,
 } from './widgets';
 
 function App() {
   console.log('app-update');
   // state
-  const [{ weekList }, updateState] = useImmer({ weekList: [] });
+  const [{ weekList }, updateState] = useImmer({
+    weekList: [],
+  });
 
   const rootElRef = useRef();
   const calendarElRef = useRef();
@@ -23,7 +26,8 @@ function App() {
   // store
   const selectedDate = useSelector(state => state.selectedDate);
   const selectedWeek = useSelector(state => state.selectedWeek);
-  const weekSwitchStatus = useSelector(state => state.weekSwitchStatus);
+  const isTaskEditorOpen = useSelector(state => state.isTaskEditorOpen);
+  const taskEditorPosition = useSelector(state => state.taskEditorPosition);
   const dispatch = useDispatch();
 
   useState(() => {
@@ -48,51 +52,37 @@ function App() {
     console.log('changeGridType', type);
   }
 
-  function changeWeekSwitchStatus(value) {
-    if (weekSwitchStatus !== 'static') {
-      return;
-    }
-    dispatch({
-      type: 'CHANGE_WEEK_SWITCH_STATUS',
-      payload: {
-        status: value,
-      },
-    });
-  }
-
   function changeToPrev() {
-    changeWeekSwitchStatus('prev');
     calendarElRef.current && calendarElRef.current.prevWeek();
   }
 
   function changeToNext() {
-    changeWeekSwitchStatus('next');
     calendarElRef.current && calendarElRef.current.nextWeek();
   }
 
-  const changeWeek = useCallback(
-    week => {
-      console.warn('changeWeek', week, selectedWeek);
-      if (week[0] & selectedWeek[0]) {
-        changeWeekSwitchStatus(selectedWeek[0] < week[0] ? 'prev' : 'next');
-      }
-      dispatch({
-        type: 'CHANGE_SELECTED_WEEK',
-        payload: {
-          week: week,
-        },
-      });
-    },
-    [dispatch],
-  );
+  const updateWeekList = week => {
+    updateState(draft => {
+      draft.weekList = week;
+    });
+  };
 
-  const onGridAnimateFinished = () => {
+  const toggleModal = (isOpen = false) => {
     dispatch({
-      type: 'CHANGE_WEEK_SWITCH_STATUS',
+      type: 'UPDATE_TASK_EDITOR',
       payload: {
-        status: 'static',
+        isOpen: isOpen,
       },
     });
+  };
+
+  const createTask = () => {
+    dispatch({
+      type: 'ADD_TASK',
+      payload: {
+        task: {},
+      },
+    });
+    toggleModal(false);
   };
 
   return (
@@ -107,9 +97,7 @@ function App() {
           ></CalendarType>
           <CalendarGrid
             selectedDate={selectedDate}
-            week={selectedWeek}
-            rootContainer={rootElRef.current}
-            onMotionFinished={onGridAnimateFinished}
+            week={weekList}
           ></CalendarGrid>
         </AppContent>
 
@@ -127,12 +115,21 @@ function App() {
             <Calendar
               ref={calendarElRef}
               onChange={changeSelectedDate}
-              onChangeWeek={changeWeek}
+              onChangeWeek={updateWeekList}
             ></Calendar>
             <Notification></Notification>
             <CalendarList></CalendarList>
           </ScrollContainer>
         </CalendarBar>
+
+        <Modal
+          left={taskEditorPosition}
+          isOpen={isTaskEditorOpen}
+          container={rootElRef.current}
+          onClickOutside={() => toggleModal(false)}
+        >
+          <TaskEditor onClickCreate={createTask}></TaskEditor>
+        </Modal>
       </AppBody>
     </ThemeProvider>
   );

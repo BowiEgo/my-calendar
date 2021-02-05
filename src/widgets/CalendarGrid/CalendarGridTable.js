@@ -1,326 +1,334 @@
 import {
-  useState,
   useEffect,
   useMemo,
   useRef,
   useCallback,
   forwardRef,
+  useImperativeHandle,
 } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, update } from 'lodash';
 import { _reqFrame } from '../../utils/reqFrame';
 import { TaskBlock, TaskBlockSolid } from '../index';
+import useTaskBlockList from '../TaskBlock/useTaskBlockList';
 
 let bid = 0;
 const CRITICAL_BLOCK_HEIGHT = 4;
 const MODAL_WIDTH = 180;
 
-const CalendarGridTable = ({ week, mousePosition, offset, onMounted }) => {
-  console.log('table-update');
+const getModalOffsetX = (element, boundary) => {
+  let offsetX = 0;
+  if (element) {
+    let bcr = element.getBoundingClientRect();
+    offsetX = bcr.left + bcr.width + 20;
+    if (offsetX + MODAL_WIDTH > boundary) {
+      offsetX = bcr.left - MODAL_WIDTH - 20;
+    }
+  }
+  return offsetX;
+};
 
-  const [blockList, setBlockList] = useState([]);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [isMoving, setIsMoving] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [tempBlockTop, setTempBlockTop] = useState(0);
-  const [tempBlockHeight, setTempBlockHeight] = useState(0);
-  const [currentCol, setCurrentCol] = useState(-1);
+const CalendarGridTable = forwardRef(
+  ({ week, mousePosition, offset, onMounted }, ref) => {
+    // console.log('table-update');
 
-  const tableElRef = useRef();
-  const tableBCR = useRef();
-  const activedCol = useRef(0);
-  const activedBlockIndex = useRef(-1);
-  const tempBlockRef = useRef();
+    // ref
+    const tableBCR = useRef();
+    const hoveredCol = useRef(-1);
+    const activedCol = useRef(0);
+    const activedBlockId = useRef();
+    const tempBlock = useRef({
+      top: 0,
+      height: 0,
+    });
+    const tempMousePosition = useRef({ x: 0, y: 0 });
+    const isDrawing = useRef(false);
+    const isMoving = useRef(false);
+    const isCreating = useRef(false);
 
-  const cursor = useMemo(() => {
-    if (isDrawing) return 'ns-resize';
-    if (isMoving) return 'move';
-  }, [isDrawing, isMoving]);
+    const tableElRef = useRef();
+    const tempBlockRef = useRef();
+    const taskBlockListRef = useRef();
 
-  const dispatch = useDispatch();
+    const cursor = useMemo(() => {
+      if (isDrawing.current) return 'ns-resize';
+      if (isMoving.current) return 'move';
+    }, [isDrawing, isMoving]);
 
-  const openModal = offsetX => {
-    dispatch({
-      type: 'CHANGE_IS_TASK_EDITOR_OPEN',
-      payload: {
-        isOpen: true,
-        position: offsetX,
+    const dispatch = useDispatch();
+    const taskList = useSelector(state => state.taskList);
+
+    const {
+      blockList,
+      activedBlock,
+      findBlockById,
+      addBlock,
+      updateBlock,
+      activeBlock,
+      disactiveBlock,
+    } = useTaskBlockList();
+
+    const openModal = useCallback(
+      offsetX => {
+        dispatch({
+          type: 'UPDATE_TASK_EDITOR',
+          payload: {
+            isOpen: true,
+            position: offsetX,
+          },
+        });
       },
-    });
-  };
+      [dispatch],
+    );
 
-  const handleMouseDown = e => {
-    if (isCreating) {
-      setIsDrawing(false);
-      initTempBlock();
-      // return;
-    }
-    setIsDrawing(true);
-    setTempBlockTop(mousePosition.y);
-  };
+    const outArea = useCallback(() => {
+      isDrawing.current = false;
+    }, []);
 
-  const handleMouseMove = e => {
-    if (isDrawing) {
-      setTempBlockHeight(mousePosition.y - tempBlockTop);
-    }
+    const initTempBlock = useCallback(() => {
+      tempBlock.current = {
+        top: 0,
+        height: 0,
+      };
+    }, []);
 
-    if (isMoving) {
-      let block = blockList[activedBlockIndex.current];
-      setTempBlockTop(mousePosition.y - (block ? block.top : 0));
-    }
-    if (activedBlockIndex.current > -1) {
-      changeBlockTop();
-    }
-  };
+    const createTask = useCallback(() => {
+      isCreating.current = true;
+    }, []);
 
-  const handleMouseUp = e => {
-    if (e) {
-      e.stopPropagation();
-      e.preventDefault();
-      // console.log('handleMouseUp', e);
-    }
+    const finishMoving = useCallback(() => {
+      updateBlock(activedBlockId.current, {
+        unix: week[activedCol.current],
+        top: tempBlock.current.top,
+        height: tempBlock.current.height,
+        disabled: false,
+      });
+      // disactiveBlock();
+      isMoving.current = false;
+    }, [week, updateBlock]);
 
-    if (activedBlockIndex.current > -1 || isMoving) {
-      disactiveBlock();
-    }
-    if (isCreating) {
-      setIsCreating(false);
-      // return;
-    }
-    if (tempBlockHeight > CRITICAL_BLOCK_HEIGHT) {
-      openModal(getModalOffsetX(tempBlockRef.current));
-    }
-    createTask();
-    setIsDrawing(false);
-  };
+    // const finishResizing = useCallback(() => {
+    //   handleMouseUp();
+    // }, [handleMouseUp]);
 
-  const handleMouseLeave = e => {
-    setIsDrawing(false);
-  };
+    const handleBlockPickUp = useCallback(
+      id => {
+        const block = findBlockById(id);
+        if (!block) return;
+        tempBlock.current = {
+          top: block.top,
+          height: block.height,
+        };
+        isMoving.current = true;
+      },
+      [findBlockById],
+    );
 
-  const handleKeyPress = e => {
-    // console.log(e);
-  };
+    const handleBlockClick = useCallback(
+      (id, element) => {
+        openModal(
+          getModalOffsetX(
+            element,
+            tableBCR.current.left + tableBCR.current.width,
+          ),
+        );
+      },
+      [openModal],
+    );
 
-  const createTask = () => {
-    setIsCreating(true);
-  };
-
-  const finishMoving = () => {
-    disactiveBlock({
-      date: week[activedCol.current].clone(),
-      top: tempBlockTop,
-      height: tempBlockHeight,
-      disabled: false,
-    });
-    setIsMoving(false);
-  };
-
-  const finishResizing = () => {
-    handleMouseUp();
-  };
-
-  const finishCreateTask = () => {
-    setBlockList([
-      ...blockList,
-      {
+    const finishCreateTask = useCallback(() => {
+      addBlock({
         id: bid++,
-        date: week[activedCol.current].clone(),
-        top: tempBlockTop,
-        height: tempBlockHeight,
+        unix: week[activedCol.current],
+        top: tempBlock.current.top,
+        height: tempBlock.current.height,
         actived: false,
         disabled: false,
         moving: false,
-      },
-    ]);
-    setIsCreating(false);
-    initTempBlock();
-  };
-
-  const initTempBlock = () => {
-    setTempBlockTop(0);
-    setTempBlockHeight(0);
-  };
-
-  const outArea = () => {
-    setIsDrawing(false);
-  };
-
-  const activeBlock = id => {
-    if (isCreating) return;
-    activedBlockIndex.current = blockList.findIndex(block => block.id === id);
-    activedCol.current = currentCol;
-    setTempBlockTop(mousePosition.y - blockList[activedBlockIndex.current].top);
-  };
-
-  const disactiveBlock = params => {
-    let newBlockList = [...blockList];
-    let block = newBlockList[activedBlockIndex.current];
-    if (!block) return;
-    block.actived = false;
-    if (params) {
-      Object.keys(params).forEach(key => {
-        block[key] = params[key];
       });
-    }
-    setBlockList([...newBlockList]);
-    activedBlockIndex.current = -1;
-  };
+      isCreating.current = false;
+      initTempBlock();
+    }, [week, addBlock, initTempBlock]);
 
-  const getModalOffsetX = element => {
-    let offsetX = 0;
-    if (element) {
-      let bcr = element.getBoundingClientRect();
-      offsetX = bcr.left + bcr.width + 20;
-      if (
-        offsetX + MODAL_WIDTH >
-        tableBCR.current.left + tableBCR.current.width
-      ) {
-        offsetX = bcr.left - MODAL_WIDTH - 20;
+    const handleMouseDown = useCallback(() => {
+      if (isCreating.current) {
+        isDrawing.current = false;
+        initTempBlock();
+        // return;
       }
-    }
-    return offsetX;
-  };
+      isDrawing.current = true;
+      tempBlock.current.top = mousePosition.y;
+    }, [mousePosition.y, initTempBlock]);
 
-  const handleBlockClick = (id, element) => {
-    openModal(getModalOffsetX(element));
-  };
+    const handleMouseMove = useCallback(() => {
+      if (isDrawing.current) {
+        tempBlock.current.height = mousePosition.y - tempBlock.current.top;
+      }
 
-  const changeBlockTop = () => {
-    let newBlockList = [...blockList];
-    let block = newBlockList[activedBlockIndex.current];
-    if (!block || block.disabled) return;
-    block.actived = true;
-    block.top = mousePosition.y - tempBlockTop;
-    setBlockList([...newBlockList]);
-  };
+      if (isMoving.current && activedBlock) {
+        tempBlock.current.top =
+          mousePosition.y - (tempMousePosition.current.y - activedBlock.top);
 
-  const changeBlockDate = useCallback(
-    index => {
-      let newBlockList = [...blockList];
-      let block = newBlockList[index];
+        activedCol.current = hoveredCol.current;
+      }
+    }, [activedBlock, mousePosition.y]);
 
-      if (!block || block.disabled) return;
-      block.date = week[currentCol].clone();
+    const handleMouseUp = useCallback(
+      e => {
+        if (e) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+        if (activedBlock || isMoving.current) {
+          finishMoving();
+          return;
+        }
 
-      setBlockList([...newBlockList]);
-    },
-    [blockList, currentCol, week],
-  );
+        if (isCreating.current) {
+          isCreating.current = false;
+        }
 
-  const handleBlockPickUp = () => {
-    let newBlockList = [...blockList];
-    let block = newBlockList[activedBlockIndex.current];
-    block.disabled = true;
-    setBlockList([...newBlockList]);
-    setTempBlockTop(block.top);
-    setTempBlockHeight(block.height);
-    setIsMoving(true);
-  };
+        if (tempBlock.current.height > CRITICAL_BLOCK_HEIGHT) {
+          openModal(
+            getModalOffsetX(
+              tempBlockRef.current,
+              tableBCR.current.left + tableBCR.current.width,
+            ),
+          );
+        }
+        createTask();
+        isDrawing.current = false;
+      },
+      [activedBlock, finishMoving, openModal, createTask],
+    );
 
-  useEffect(() => {
-    tableBCR.current = tableElRef.current.getBoundingClientRect();
-    onMounted(tableBCR.current);
-  }, [onMounted]);
+    const handleMouseLeave = useCallback(() => {
+      isDrawing.current = false;
+    }, []);
 
-  useEffect(() => {
-    let posX = mousePosition.x;
-    if (mousePosition.x > tableBCR.current.width) {
-      outArea();
-      posX = tableBCR.current.width;
-    }
+    const handleKeyPress = useCallback(e => {
+      // console.log(e);
+    }, []);
 
-    let col = parseInt(posX / (tableBCR.current.width / 7));
-    col = col === 7 ? 6 : col;
-    setCurrentCol(col);
+    useEffect(() => {
+      tableBCR.current = tableElRef.current.getBoundingClientRect();
+      onMounted(tableBCR.current);
+    }, [onMounted]);
 
-    if (isDrawing) {
-      activedCol.current = currentCol;
-    }
-  }, [mousePosition, isDrawing, currentCol]);
+    useEffect(() => {
+      let posX = mousePosition.x;
+      if (mousePosition.x > tableBCR.current.width) {
+        outArea();
+        posX = tableBCR.current.width;
+      }
 
-  useEffect(() => {
-    if (isDrawing || isMoving) {
-      activedCol.current = currentCol;
-    }
-    if (activedBlockIndex.current > -1) {
-      changeBlockDate(activedBlockIndex.current);
-    }
-  }, [currentCol, isDrawing, isMoving, changeBlockDate]);
+      let col = parseInt(posX / (tableBCR.current.width / 7));
+      col = col === 7 ? 6 : col;
+      hoveredCol.current = col;
 
-  const renderTableEl = () => {
-    let ht = 0;
-    const hours = Array(24)
-      .fill(0)
-      .map(() => ht++);
+      if (isDrawing.current) {
+        activedCol.current = hoveredCol.current;
+      }
+    }, [mousePosition, outArea]);
 
-    return week.map((date, index) => (
-      <GridTableCol key={index}>
-        {[
-          hours.map((h, idx) => (
-            <GridTableCell
-              key={idx}
-              className="grid-table-cell"
-            ></GridTableCell>
-          )),
-          blockList.map(
-            (block, idx) =>
-              block.date.isSame(date) && (
-                <TaskBlockSolid
-                  {...block}
+    useEffect(() => {
+      finishCreateTask();
+    }, [taskList, finishCreateTask]);
+
+    const renderTableEl = () => {
+      let ht = 0;
+      const hours = Array(24)
+        .fill(0)
+        .map(() => ht++);
+
+      return week.map((unix, index) => {
+        return (
+          <GridTableCol key={index}>
+            {[
+              hours.map((h, idx) => (
+                <GridTableCell
                   key={idx}
-                  outerHeight={tableBCR.current.height}
-                  onActive={activeBlock}
-                  onDisactive={disactiveBlock}
-                  onPickUp={handleBlockPickUp}
-                  onClick={handleBlockClick}
-                ></TaskBlockSolid>
+                  className="grid-table-cell"
+                ></GridTableCell>
+              )),
+              blockList.map(
+                (block, idx) =>
+                  block.unix === unix && (
+                    <TaskBlockSolid
+                      {...block}
+                      key={idx}
+                      outerHeight={tableBCR.current.height}
+                      onActive={id => {
+                        if (!isCreating.current) {
+                          tempBlock.current = {
+                            top: block.top,
+                            height: block.height,
+                          };
+                          activeBlock(id);
+                          activedBlockId.current = id;
+                          console.log('activeBlock-9999', block);
+                          tempMousePosition.current.y = mousePosition.y;
+                          isMoving.current = true;
+                        }
+                      }}
+                      onDisactive={() => {
+                        console.log('onDisactive', isMoving.current);
+                        // isMoving.current = false;
+                        // disactiveBlock();
+                      }}
+                      onPickUp={handleBlockPickUp}
+                      onClick={handleBlockClick}
+                    ></TaskBlockSolid>
+                  ),
               ),
-          ),
-          (isDrawing || isMoving || isCreating) &
-          ((index === activedCol.current) &
-            (tempBlockHeight > CRITICAL_BLOCK_HEIGHT)) ? (
-            <TaskBlock
-              ref={tempBlockRef}
-              key={-1}
-              date={week[activedCol.current].clone()}
-              top={tempBlockTop}
-              height={tempBlockHeight}
-              outerHeight={tableBCR.current.height}
-              moving={isMoving}
-              resizing={isDrawing}
-              finishMoving={finishMoving}
-              finishResizing={finishResizing}
-              onFinish={finishCreateTask}
-              shadow
-            />
-          ) : null,
-        ]}
-      </GridTableCol>
-    ));
-  };
+              (isDrawing.current || isMoving.current || isCreating.current) &
+                ((index === activedCol.current) &
+                  (tempBlock.current.height > CRITICAL_BLOCK_HEIGHT)) && (
+                <TaskBlock
+                  ref={tempBlockRef}
+                  key={-1}
+                  unix={week[activedCol.current]}
+                  top={tempBlock.current.top}
+                  height={tempBlock.current.height}
+                  outerHeight={tableBCR.current.height}
+                  moving={isMoving.current}
+                  resizing={isDrawing.current}
+                  // finishMoving={finishMoving}
+                  // finishResizing={finishResizing}
+                  onMouseUp={() => {
+                    handleMouseUp();
+                  }}
+                  shadow
+                />
+              ),
+            ]}
+          </GridTableCol>
+        );
+      });
+    };
 
-  return (
-    <Container
-      ref={tableElRef}
-      cursor={cursor}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onKeyPress={handleKeyPress}
-    >
-      {renderTableEl()}
-      {/* <div style={{ position: 'fixed', top: 0 }}>
+    return (
+      <Container
+        ref={tableElRef}
+        cursor={cursor}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onKeyPress={handleKeyPress}
+      >
+        {renderTableEl()}
+        {/* <div style={{ position: 'fixed', top: 0 }}>
         <p>{`pos: ${mousePosition.x}^${mousePosition.y}`}</p>
-        <p>{`col: ${currentCol}`}</p>
+        <p>{`col: ${hoveredCol}`}</p>
         <p>{`tempBlockTop: ${tempBlockTop}`}</p>
         <p>{`tempBlockHeight: ${tempBlockHeight}`}</p>
       </div> */}
-    </Container>
-  );
-};
+      </Container>
+    );
+  },
+);
 
 const Container = styled.div`
   display: flex;

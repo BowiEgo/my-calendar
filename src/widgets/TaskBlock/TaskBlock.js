@@ -1,11 +1,12 @@
-import { useState, useMemo, useEffect, forwardRef } from 'react';
+import { useState, useMemo, forwardRef } from 'react';
 import styled from 'styled-components';
+import moment from 'moment';
 
 const TaskBlock = forwardRef(
   (
     {
       id = -1,
-      date,
+      unix,
       title = '无标题',
       type = 'work',
       top,
@@ -19,12 +20,16 @@ const TaskBlock = forwardRef(
       finishMoving,
       finishResizing,
       onFinish,
+      onMouseUp,
     },
     ref,
   ) => {
-    console.log('block-update');
-    // States
+    // console.log('block-update');
+    // states
     const [isDragging, setIsDragging] = useState(false);
+
+    // memo
+    const date = useMemo(() => moment(unix), [unix]);
 
     const startTime = useMemo(() => getRelatveTime(top, outerHeight, date), [
       top,
@@ -54,18 +59,20 @@ const TaskBlock = forwardRef(
         e.stopPropagation();
         e.preventDefault();
       }
+      onMouseUp();
+
       if (moving) {
-        finishMoving();
+        // finishMoving && finishMoving();
       }
       if (resizing) {
-        finishResizing();
+        // finishResizing && finishResizing();
       }
     };
 
     const handleFinishMouseUp = e => {
       e.stopPropagation();
       e.preventDefault();
-      handleMouseUp();
+      // handleMouseUp();
     };
 
     const handleFinish = e => {
@@ -93,20 +100,6 @@ const TaskBlock = forwardRef(
             <div>{startTime.format('HH:mm')}</div>
             {height > 80 && <Title>{title}</Title>}
             <div>{endTime.format('HH:mm')}</div>
-            {shadow && (
-              <button
-                onClick={handleFinish}
-                onMouseUp={handleFinishMouseUp}
-                style={{
-                  width: '60px',
-                  height: '20px',
-                  position: 'absolute',
-                  bottom: 0,
-                  right: 0,
-                  background: '#3f51b5',
-                }}
-              ></button>
-            )}
           </InnerBlock>
         )}
       </Container>

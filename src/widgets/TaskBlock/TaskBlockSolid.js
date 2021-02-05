@@ -45,7 +45,7 @@ const TaskBlockSolid = props => {
   };
 
   const handleClick = e => {
-    onClick(id, blockRef.current);
+    onClick && onClick(id, blockRef.current);
   };
 
   const defaultOptions = {

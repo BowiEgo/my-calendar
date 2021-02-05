@@ -2,7 +2,7 @@ import { useContext } from 'react';
 import styled, { ThemeContext } from 'styled-components';
 import { Button } from '../../components';
 
-const TaskEditor = ({ theme }) => {
+const TaskEditor = ({ theme, onClickCreate } = {}) => {
   const themeContext = useContext(ThemeContext);
 
   return (
@@ -20,6 +20,7 @@ const TaskEditor = ({ theme }) => {
         color={'white'}
         backgroundColor={themeContext.primaryColor}
         hoverColor={themeContext.primaryColor}
+        onClick={onClickCreate}
       >
         Create Activity
       </Button>

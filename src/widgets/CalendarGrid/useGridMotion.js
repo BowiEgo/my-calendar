@@ -1,9 +1,7 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-// import { useSelector, useDispatch } from 'react-redux';
+import { useState, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 
-const GridMotion = forwardRef(({ resolveFn, children }, ref) => {
-  console.log('ref', ref);
+const useGridMotion = ({ resolveFn } = {}) => {
   const [weekSwitchStatus, setWeekSwitchStatus] = useState('static');
 
   const control = useAnimation();
@@ -12,14 +10,13 @@ const GridMotion = forwardRef(({ resolveFn, children }, ref) => {
     switchPromise.then(() => resolveFn && resolveFn());
   }, [weekSwitchStatus]);
 
-  useImperativeHandle(ref, () => ({
-    prev: () => {
-      setWeekSwitchStatus('prev');
-    },
-    next: () => {
-      setWeekSwitchStatus('next');
-    },
-  }));
+  const prev = () => {
+    setWeekSwitchStatus('prev');
+  };
+
+  const next = () => {
+    setWeekSwitchStatus('next');
+  };
 
   const switchPromise = new Promise((resolve, reject) => {
     if (weekSwitchStatus !== 'static') {
@@ -39,27 +36,24 @@ const GridMotion = forwardRef(({ resolveFn, children }, ref) => {
           translateX: 0,
         });
       }
-      // setIsVisible(true);
-
       setTimeout(() => {
         setWeekSwitchStatus('static');
         resolve();
       }, 300);
-    } else {
-      // setIsVisible(false);
     }
   });
 
-  return (
-    <motion.div
-      ref={ref}
-      animate={control}
-      transition={{ duration: 0.3 }}
-      style={{ height: '100%', flex: 1 }}
-    >
-      {children}
-    </motion.div>
-  );
-});
+  return {
+    motion,
+    motionProps: {
+      animate: control,
+      transition: { duration: 0.3 },
+    },
+    motionHandlers: {
+      prev,
+      next,
+    },
+  };
+};
 
-export default GridMotion;
+export default useGridMotion;

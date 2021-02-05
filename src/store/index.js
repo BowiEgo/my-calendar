@@ -5,7 +5,7 @@ const initState = {
   selectedWeek: [],
   isTaskEditorOpen: false,
   taskEditorPosition: 0,
-  weekSwitchStatus: 'static',
+  taskList: [],
 };
 
 const reducer = produce((draft = initState, action) => {
@@ -20,15 +20,14 @@ const reducer = produce((draft = initState, action) => {
       draft.selectedWeek = payload.week;
       return draft;
 
-    // 切换任务编辑弹窗是否显示
-    case 'CHANGE_IS_TASK_EDITOR_OPEN':
+    // 任务编辑弹窗
+    case 'UPDATE_TASK_EDITOR':
       draft.isTaskEditorOpen = payload.isOpen;
       draft.taskEditorPosition = payload.position || 0;
       return draft;
 
-    // 切换上下周动画状态
-    case 'CHANGE_WEEK_SWITCH_STATUS':
-      draft.weekSwitchStatus = payload.status;
+    case 'ADD_TASK':
+      draft.taskList.push(payload.task);
       return draft;
 
     default:
