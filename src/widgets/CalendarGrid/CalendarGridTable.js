@@ -1,4 +1,5 @@
 import {
+  useState,
   useEffect,
   useMemo,
   useRef,
@@ -33,6 +34,9 @@ const CalendarGridTable = forwardRef(
   ({ week, mousePosition, offset, onMounted }, ref) => {
     // console.log('table-update');
 
+    // state
+    const [isTempBlockVisible, setIsTempBlockVisible] = useState(false);
+
     // ref
     const tableBCR = useRef();
     const hoveredCol = useRef(-1);
@@ -42,7 +46,7 @@ const CalendarGridTable = forwardRef(
       top: 0,
       height: 0,
     });
-    const tempMousePosition = useRef({ x: 0, y: 0 });
+    const mousePositionCache = useRef({ x: 0, y: 0 });
     const isDrawing = useRef(false);
     const isMoving = useRef(false);
     const isCreating = useRef(false);
@@ -104,40 +108,63 @@ const CalendarGridTable = forwardRef(
         height: tempBlock.current.height,
         disabled: false,
       });
-      // disactiveBlock();
+      disactiveBlock();
+      activedBlockId.current = null;
       isMoving.current = false;
-    }, [week, updateBlock]);
+      if (isTempBlockVisible) {
+        setIsTempBlockVisible(false);
+      }
+    }, [week, isTempBlockVisible, updateBlock, disactiveBlock]);
 
     // const finishResizing = useCallback(() => {
     //   handleMouseUp();
     // }, [handleMouseUp]);
 
-    const handleBlockPickUp = useCallback(
-      id => {
-        const block = findBlockById(id);
-        if (!block) return;
+    const handleBlockActive = (id, block) => {
+      if (!isCreating.current) {
         tempBlock.current = {
           top: block.top,
           height: block.height,
         };
-        isMoving.current = true;
+        activedBlockId.current = id;
+        mousePositionCache.current.y = mousePosition.y;
+        activedCol.current = hoveredCol.current;
+        activeBlock(id);
+        // isMoving.current = true;
+      }
+    };
+
+    const handleBlockPickUp = useCallback(
+      id => {
+        if (isMoving.current) {
+          return;
+        }
+        const block = findBlockById(id);
+        updateBlock(id, {
+          disabled: true,
+        });
+        if (block) {
+          isMoving.current = true;
+          setIsTempBlockVisible(true);
+        }
       },
-      [findBlockById],
+      [findBlockById, updateBlock],
     );
 
     const handleBlockClick = useCallback(
       (id, element) => {
-        openModal(
-          getModalOffsetX(
-            element,
-            tableBCR.current.left + tableBCR.current.width,
-          ),
-        );
+        // openModal(
+        //   getModalOffsetX(
+        //     element,
+        //     tableBCR.current.left + tableBCR.current.width,
+        //   ),
+        // );
       },
       [openModal],
     );
 
     const finishCreateTask = useCallback(() => {
+      console.log('finishCreateTask');
       addBlock({
         id: bid++,
         unix: week[activedCol.current],
@@ -166,13 +193,19 @@ const CalendarGridTable = forwardRef(
         tempBlock.current.height = mousePosition.y - tempBlock.current.top;
       }
 
-      if (isMoving.current && activedBlock) {
-        tempBlock.current.top =
-          mousePosition.y - (tempMousePosition.current.y - activedBlock.top);
-
-        activedCol.current = hoveredCol.current;
+      if (activedBlock) {
+        if (!isMoving.current) {
+          isMoving.current = true;
+        }
+        if (!activedBlock.disabled) {
+          updateBlock(activedBlock.id, { disabled: true });
+        } else {
+          tempBlock.current.top =
+            mousePosition.y - (mousePositionCache.current.y - activedBlock.top);
+          activedCol.current = hoveredCol.current;
+        }
       }
-    }, [activedBlock, mousePosition.y]);
+    }, [activedBlock, mousePosition.y, updateBlock]);
 
     const handleMouseUp = useCallback(
       e => {
@@ -180,9 +213,13 @@ const CalendarGridTable = forwardRef(
           e.stopPropagation();
           e.preventDefault();
         }
-        if (activedBlock || isMoving.current) {
-          finishMoving();
-          return;
+
+        if (activedBlock) {
+          disactiveBlock();
+          if (isMoving.current) {
+            finishMoving();
+            return;
+          }
         }
 
         if (isCreating.current) {
@@ -200,7 +237,7 @@ const CalendarGridTable = forwardRef(
         createTask();
         isDrawing.current = false;
       },
-      [activedBlock, finishMoving, openModal, createTask],
+      [activedBlock, disactiveBlock, finishMoving, openModal, createTask],
     );
 
     const handleMouseLeave = useCallback(() => {
@@ -233,6 +270,9 @@ const CalendarGridTable = forwardRef(
     }, [mousePosition, outArea]);
 
     useEffect(() => {
+      if (taskList.length === 0) {
+        return;
+      }
       finishCreateTask();
     }, [taskList, finishCreateTask]);
 
@@ -243,6 +283,14 @@ const CalendarGridTable = forwardRef(
         .map(() => ht++);
 
       return week.map((unix, index) => {
+        let tempBlockVisible =
+          (isDrawing.current || isMoving.current || isCreating.current) &&
+          tempBlock.current.height > CRITICAL_BLOCK_HEIGHT;
+
+        tempBlockVisible =
+          (tempBlockVisible || isTempBlockVisible) &&
+          index === activedCol.current;
+
         return (
           <GridTableCol key={index}>
             {[
@@ -259,32 +307,16 @@ const CalendarGridTable = forwardRef(
                       {...block}
                       key={idx}
                       outerHeight={tableBCR.current.height}
-                      onActive={id => {
-                        if (!isCreating.current) {
-                          tempBlock.current = {
-                            top: block.top,
-                            height: block.height,
-                          };
-                          activeBlock(id);
-                          activedBlockId.current = id;
-                          console.log('activeBlock-9999', block);
-                          tempMousePosition.current.y = mousePosition.y;
-                          isMoving.current = true;
-                        }
-                      }}
+                      onActive={id => handleBlockActive(id, block)}
                       onDisactive={() => {
-                        console.log('onDisactive', isMoving.current);
-                        // isMoving.current = false;
-                        // disactiveBlock();
+                        disactiveBlock();
                       }}
                       onPickUp={handleBlockPickUp}
                       onClick={handleBlockClick}
                     ></TaskBlockSolid>
                   ),
               ),
-              (isDrawing.current || isMoving.current || isCreating.current) &
-                ((index === activedCol.current) &
-                  (tempBlock.current.height > CRITICAL_BLOCK_HEIGHT)) && (
+              tempBlockVisible && (
                 <TaskBlock
                   ref={tempBlockRef}
                   key={-1}

@@ -21,6 +21,8 @@ const TaskBlock = forwardRef(
       finishResizing,
       onFinish,
       onMouseUp,
+      isSolid,
+      children,
     },
     ref,
   ) => {
@@ -45,6 +47,7 @@ const TaskBlock = forwardRef(
     const cursor = useMemo(() => {
       if (resizing) return 'ns-resize';
       if (moving) return 'move';
+      if (isSolid) return 'pointer';
     }, [resizing, moving]);
 
     const handleMouseDown = e => {
@@ -100,6 +103,7 @@ const TaskBlock = forwardRef(
             <div>{startTime.format('HH:mm')}</div>
             {height > 80 && <Title>{title}</Title>}
             <div>{endTime.format('HH:mm')}</div>
+            {children}
           </InnerBlock>
         )}
       </Container>

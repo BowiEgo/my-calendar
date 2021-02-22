@@ -7,6 +7,7 @@ const TaskBlockSolid = props => {
     id,
     top,
     actived,
+    disabled,
     onActive,
     onDisactive,
     onPickUp,
@@ -15,17 +16,6 @@ const TaskBlockSolid = props => {
   } = props;
 
   const blockRef = useRef();
-  const moving = useRef(false);
-
-  useEffect(() => {
-    moving.current = true;
-  }, [top]);
-
-  useEffect(() => {
-    if (!actived) {
-      moving.current = false;
-    }
-  }, [actived]);
 
   const onPressStart = e => {
     onActive(id);
@@ -33,16 +23,13 @@ const TaskBlockSolid = props => {
 
   const onPressEnd = e => {
     onDisactive(id);
-    moving.current = false;
   };
 
   const onLongPressStart = e => {
-    !moving.current && onPickUp(id);
+    onPickUp(id);
   };
 
-  const onLongPressEnd = e => {
-    moving.current = false;
-  };
+  const onLongPressEnd = e => {};
 
   const handleClick = e => {
     onClick && onClick(id, blockRef.current);
@@ -65,7 +52,9 @@ const TaskBlockSolid = props => {
 
   return (
     <div {...longPressEvent}>
-      <TaskBlock {...props} moving={moving.current} ref={blockRef}></TaskBlock>
+      <TaskBlock {...props} isSolid={true} disabled={disabled} ref={blockRef}>
+        {actived ? 'actived' : ''}
+      </TaskBlock>
     </div>
   );
 };

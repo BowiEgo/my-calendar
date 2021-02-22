@@ -13,6 +13,8 @@ import moment, { unix } from 'moment';
 import { ChevronLeft, ChevronRight } from 'react-feather';
 import { Button, ButtonGroup } from '../../components';
 import { CalendarCell } from '../index';
+import useWeekBarMotion from './useWeekBarMotion';
+import useHistory from '../../utils/useHistory';
 
 const nowUnix = new Date().getTime();
 const nowMoment = moment(nowUnix);
@@ -42,7 +44,22 @@ const Calendar = forwardRef(({ onChange, onChangeWeek }, ref) => {
   const todayUnix = useRef(+moment().startOf('day').format('x'));
   const selectedDate = useRef();
   const startOfCurrentMonth = useRef(startOfCurrentMonthTmp);
-  const startOfSelectedWeek = useRef(calendarTmp[indexOfSelectedWeekTmp][0]);
+  const initialWeekIndex = useRef(-1);
+
+  // history
+  const {
+    present: startOfSelectedWeek,
+    update: updateSSW,
+    getPast: getPastOfSSW,
+  } = useHistory(calendarTmp[indexOfSelectedWeekTmp][0], { size: 2 });
+
+  // motion
+  const { motion, motionProps, motionHandlers } = useWeekBarMotion({
+    pos: indexOfSelectedWeek + 1,
+    initialPos: initialWeekIndex.current + 1,
+    fixY: 2,
+    resolveFn: () => {},
+  });
 
   useEffect(() => {
     if (indexOfSelectedWeek > -1) {
@@ -51,27 +68,31 @@ const Calendar = forwardRef(({ onChange, onChangeWeek }, ref) => {
   }, [indexOfSelectedWeek, onChangeWeek]);
 
   // method
-  const prevMonth = () => {
+  const prevMonth = startOfWeek => {
     startOfCurrentMonth.current = +moment(startOfCurrentMonth.current)
       .subtract(1, 'month')
       .format('x');
 
-    updateCalendar();
+    updateCalendar(startOfWeek);
   };
 
-  const nextMonth = () => {
+  const nextMonth = startOfWeek => {
     startOfCurrentMonth.current = +moment(startOfCurrentMonth.current)
       .add(1, 'month')
       .format('x');
 
-    updateCalendar();
+    updateCalendar(startOfWeek);
   };
 
-  const updateCalendar = () => {
+  const updateCalendar = startOfWeek => {
     const { calendar, weekIndex } = getCalendar(
       startOfCurrentMonth.current,
-      startOfSelectedWeek.current,
+      startOfWeek || startOfSelectedWeek,
     );
+
+    initialWeekIndex.current = startOfWeek
+      ? findWeekIndexByStart(getPastOfSSW(1)[0], calendar)
+      : weekIndex;
 
     updateState(draft => {
       draft.indexOfSelectedWeek = weekIndex;
@@ -86,42 +107,56 @@ const Calendar = forwardRef(({ onChange, onChangeWeek }, ref) => {
       onChange && onChange(unix);
 
       const weekStartUnix = +moment(unix).startOf('week').format('x');
-      if (weekStartUnix !== startOfSelectedWeek.current) {
+
+      if (weekStartUnix !== startOfSelectedWeek) {
         const row = getRow(unix, startOfCurrentMonth.current);
 
-        startOfSelectedWeek.current = weekStartUnix;
+        updateSSW(weekStartUnix);
         updateState(draft => {
           draft.startOfSelectedCalendar = calendar[0][0];
           draft.indexOfSelectedWeek = row;
         });
       }
     },
-    [calendar, onChange, updateState],
+    [
+      calendar,
+      indexOfSelectedWeek,
+      startOfSelectedWeek,
+      onChange,
+      updateState,
+      updateSSW,
+    ],
   );
 
   useImperativeHandle(ref, () => ({
     prevWeek: () => {
       if (indexOfSelectedWeek > 0) {
+        initialWeekIndex.current = indexOfSelectedWeek;
         updateState(draft => {
           draft.indexOfSelectedWeek--;
+          updateSSW(calendar[draft.indexOfSelectedWeek][0]);
         });
       } else {
-        startOfSelectedWeek.current = +moment(calendar[0][0])
+        let startOfWeek = +moment(calendar[0][0])
           .subtract(1, 'week')
           .format('x');
-        prevMonth();
+
+        updateSSW(startOfWeek);
+        prevMonth(startOfWeek);
       }
     },
     nextWeek: () => {
       if (indexOfSelectedWeek < 5) {
+        initialWeekIndex.current = indexOfSelectedWeek;
         updateState(draft => {
           draft.indexOfSelectedWeek++;
+          updateSSW(calendar[draft.indexOfSelectedWeek][0]);
         });
       } else {
-        startOfSelectedWeek.current = +moment(calendar[5][0])
-          .add(1, 'week')
-          .format('x');
-        nextMonth();
+        let startOfWeek = +moment(calendar[5][0]).add(1, 'week').format('x');
+
+        updateSSW(startOfWeek);
+        nextMonth(startOfWeek);
       }
     },
   }));
@@ -184,10 +219,9 @@ const Calendar = forwardRef(({ onChange, onChangeWeek }, ref) => {
       </CalendarHeader>
 
       <div style={{ position: 'relative' }}>
-        <WeekBg
-          visible={indexOfSelectedWeek > -1}
-          translateY={indexOfSelectedWeek * 36 + 1}
-        ></WeekBg>
+        <motion.div {...motionProps}>
+          <WeekBar visible={indexOfSelectedWeek > -1}></WeekBar>
+        </motion.div>
         <table>
           <thead>{renderTableHead()}</thead>
           <tbody>{renderTableBody()}</tbody>
@@ -235,6 +269,14 @@ function getRow(unix, startDayUnix) {
   return row;
 }
 
+function findWeekIndexByStart(startOfWeek, calendar) {
+  for (let i = 0; i < calendar.length; i++) {
+    if (calendar[i][0] === startOfWeek) {
+      return i;
+    }
+  }
+}
+
 const Container = styled.div`
   position: relative;
   width: 100%;
@@ -266,20 +308,15 @@ const MonthButton = styled(Button)`
   justify-content: center;
 `;
 
-const WeekBg = styled.div.attrs(props => ({
+const WeekBar = styled.div.attrs(props => ({
   style: {
     display: props.visible ? 'block' : 'none',
-    transform: `translateY(${props.translateY}px)`,
   },
 }))`
-  position: absolute;
-  top: 37px;
-  left: 0;
   width: 100%;
   height: 34px;
   border-radius: 8px;
   background-color: ${props => props.theme.primaryColorSecondary};
-  transition: transform ease 0.1s;
   z-index: -1;
 `;
 

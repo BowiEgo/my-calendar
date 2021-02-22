@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import {
+  motion,
+  useAnimation,
+  useMotionValue,
+  useTransform,
+} from 'framer-motion';
 
 const useGridMotion = ({ resolveFn } = {}) => {
   const [weekSwitchStatus, setWeekSwitchStatus] = useState('static');
@@ -21,20 +26,11 @@ const useGridMotion = ({ resolveFn } = {}) => {
   const switchPromise = new Promise((resolve, reject) => {
     if (weekSwitchStatus !== 'static') {
       if (weekSwitchStatus === 'prev') {
-        control.set({
-          opacity: 0,
-          translateX: -80,
-        });
-        control.start({
-          opacity: 1,
-          translateX: 0,
-        });
+        control.set({ x: -80, opacity: 0 });
+        control.start({ x: 0, opacity: 1 });
       } else {
-        control.set({ opacity: 0, translateX: 80 });
-        control.start({
-          opacity: 1,
-          translateX: 0,
-        });
+        control.set({ x: 80, opacity: 0 });
+        control.start({ x: 0, opacity: 1 });
       }
       setTimeout(() => {
         setWeekSwitchStatus('static');

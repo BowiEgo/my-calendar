@@ -19,6 +19,7 @@ export default function useTaskBlockList() {
 
   const addBlock = useCallback(
     block => {
+      console.log('addBlock', block);
       updateState(draft => {
         draft.blockList.push(block);
       });
@@ -28,9 +29,10 @@ export default function useTaskBlockList() {
 
   const updateBlock = useCallback(
     (id, properties) => {
+      console.log('updateBlock', id, properties);
       updateState(draft => {
         let block = draft.blockList.find(item => item.id === id);
-        if (block && !block.disabled) {
+        if (block) {
           Object.keys(properties).forEach(key => {
             block[key] = properties[key];
           });
