@@ -106,6 +106,7 @@ const TaskBlock = forwardRef(
             {children}
           </InnerBlock>
         )}
+        <ResizeBlock></ResizeBlock>
       </Container>
     );
   },
@@ -154,6 +155,12 @@ const Title = styled.div`
   padding-top: 10px;
   font-weight: 600;
   font-size: 14px;
+`;
+
+const ResizeBlock = styled.div`
+  height: 10px;
+  background: #000,
+  cursor: ns-resizing
 `;
 
 export default TaskBlock;

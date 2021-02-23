@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion, useAnimation, useMotionValue } from 'framer-motion';
+import { useEffect, useCallback } from 'react';
+import { motion, useAnimation } from 'framer-motion';
 
 const DURATION = 0.2;
 
@@ -7,7 +7,6 @@ const useWeekBarMotion = ({ pos, initialPos, fixY, resolveFn } = {}) => {
   const control = useAnimation();
 
   useEffect(() => {
-    console.log('watch-pos', pos, initialPos);
     if (pos >= 0) {
       animePromise();
     }

@@ -5,14 +5,13 @@ import {
   useRef,
   useCallback,
   forwardRef,
-  useImperativeHandle,
 } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { cloneDeep, update } from 'lodash';
 import { _reqFrame } from '../../utils/reqFrame';
-import { TaskBlock, TaskBlockSolid } from '../index';
-import useTaskBlockList from '../TaskBlock/useTaskBlockList';
+import useTaskBlockList from './useTaskBlockList';
+import TableEl from './TableEl';
 
 let bid = 0;
 const CRITICAL_BLOCK_HEIGHT = 4;
@@ -41,7 +40,6 @@ const CalendarGridTable = forwardRef(
     const tableBCR = useRef();
     const hoveredCol = useRef(-1);
     const activedCol = useRef(0);
-    const activedBlockId = useRef();
     const tempBlock = useRef({
       top: 0,
       height: 0,
@@ -66,6 +64,7 @@ const CalendarGridTable = forwardRef(
     const {
       blockList,
       activedBlock,
+      activedBlockId,
       findBlockById,
       addBlock,
       updateBlock,
@@ -102,19 +101,26 @@ const CalendarGridTable = forwardRef(
     }, []);
 
     const finishMoving = useCallback(() => {
-      updateBlock(activedBlockId.current, {
+      updateBlock(activedBlockId, {
         unix: week[activedCol.current],
         top: tempBlock.current.top,
         height: tempBlock.current.height,
         disabled: false,
       });
       disactiveBlock();
-      activedBlockId.current = null;
       isMoving.current = false;
       if (isTempBlockVisible) {
         setIsTempBlockVisible(false);
       }
-    }, [week, isTempBlockVisible, updateBlock, disactiveBlock]);
+      initTempBlock();
+    }, [
+      week,
+      isTempBlockVisible,
+      activedBlockId,
+      updateBlock,
+      disactiveBlock,
+      initTempBlock,
+    ]);
 
     // const finishResizing = useCallback(() => {
     //   handleMouseUp();
@@ -126,11 +132,9 @@ const CalendarGridTable = forwardRef(
           top: block.top,
           height: block.height,
         };
-        activedBlockId.current = id;
         mousePositionCache.current.y = mousePosition.y;
         activedCol.current = hoveredCol.current;
         activeBlock(id);
-        // isMoving.current = true;
       }
     };
 
@@ -151,20 +155,17 @@ const CalendarGridTable = forwardRef(
       [findBlockById, updateBlock],
     );
 
-    const handleBlockClick = useCallback(
-      (id, element) => {
-        // openModal(
-        //   getModalOffsetX(
-        //     element,
-        //     tableBCR.current.left + tableBCR.current.width,
-        //   ),
-        // );
-      },
-      [openModal],
-    );
+    const handleBlockClick = useCallback((id, element) => {
+      console.log('handleBlockClick', id, element);
+      // openModal(
+      //   getModalOffsetX(
+      //     element,
+      //     tableBCR.current.left + tableBCR.current.width,
+      //   ),
+      // );
+    }, []);
 
     const finishCreateTask = useCallback(() => {
-      console.log('finishCreateTask');
       addBlock({
         id: bid++,
         unix: week[activedCol.current],
@@ -182,7 +183,6 @@ const CalendarGridTable = forwardRef(
       if (isCreating.current) {
         isDrawing.current = false;
         initTempBlock();
-        // return;
       }
       isDrawing.current = true;
       tempBlock.current.top = mousePosition.y;
@@ -276,68 +276,22 @@ const CalendarGridTable = forwardRef(
       finishCreateTask();
     }, [taskList, finishCreateTask]);
 
-    const renderTableEl = () => {
-      let ht = 0;
-      const hours = Array(24)
-        .fill(0)
-        .map(() => ht++);
-
-      return week.map((unix, index) => {
-        let tempBlockVisible =
-          (isDrawing.current || isMoving.current || isCreating.current) &&
-          tempBlock.current.height > CRITICAL_BLOCK_HEIGHT;
-
-        tempBlockVisible =
-          (tempBlockVisible || isTempBlockVisible) &&
-          index === activedCol.current;
-
-        return (
-          <GridTableCol key={index}>
-            {[
-              hours.map((h, idx) => (
-                <GridTableCell
-                  key={idx}
-                  className="grid-table-cell"
-                ></GridTableCell>
-              )),
-              blockList.map(
-                (block, idx) =>
-                  block.unix === unix && (
-                    <TaskBlockSolid
-                      {...block}
-                      key={idx}
-                      outerHeight={tableBCR.current.height}
-                      onActive={id => handleBlockActive(id, block)}
-                      onDisactive={() => {
-                        disactiveBlock();
-                      }}
-                      onPickUp={handleBlockPickUp}
-                      onClick={handleBlockClick}
-                    ></TaskBlockSolid>
-                  ),
-              ),
-              tempBlockVisible && (
-                <TaskBlock
-                  ref={tempBlockRef}
-                  key={-1}
-                  unix={week[activedCol.current]}
-                  top={tempBlock.current.top}
-                  height={tempBlock.current.height}
-                  outerHeight={tableBCR.current.height}
-                  moving={isMoving.current}
-                  resizing={isDrawing.current}
-                  // finishMoving={finishMoving}
-                  // finishResizing={finishResizing}
-                  onMouseUp={() => {
-                    handleMouseUp();
-                  }}
-                  shadow
-                />
-              ),
-            ]}
-          </GridTableCol>
-        );
-      });
+    const tableElProps = {
+      week,
+      blockList,
+      tempBlockRef,
+      isTempBlockVisible,
+      tempBlock: tempBlock.current,
+      tableBCR: tableBCR.current,
+      activedCol: activedCol.current,
+      isDrawing: isDrawing.current,
+      isMoving: isMoving.current,
+      isCreating: isCreating.current,
+      onBlockActive: handleBlockActive,
+      onBlockDisactive: disactiveBlock,
+      onBlockPickUp: handleBlockPickUp,
+      onBlockClick: handleBlockClick,
+      onMouseUp: handleMouseUp,
     };
 
     return (
@@ -350,7 +304,7 @@ const CalendarGridTable = forwardRef(
         onMouseLeave={handleMouseLeave}
         onKeyPress={handleKeyPress}
       >
-        {renderTableEl()}
+        <TableEl {...tableElProps}></TableEl>
         {/* <div style={{ position: 'fixed', top: 0 }}>
         <p>{`pos: ${mousePosition.x}^${mousePosition.y}`}</p>
         <p>{`col: ${hoveredCol}`}</p>
@@ -367,18 +321,6 @@ const Container = styled.div`
   flex: 1;
   height: auto;
   cursor: ${props => props.cursor};
-`;
-
-const GridTableCol = styled.div`
-  position: relative;
-  flex: 1;
-`;
-
-const GridTableCell = styled.div`
-  height: 7vw;
-  border-bottom: 1px solid ${props => props.theme.borderColor};
-  border-right: 1px solid ${props => props.theme.borderColor};
-  box-sizing: border-box;
 `;
 
 export default CalendarGridTable;

@@ -6,6 +6,8 @@ export default function useTaskBlockList() {
     blockList: [],
   });
 
+  const activedBlockId = useRef();
+
   const activedBlockMemo = useMemo(() => {
     return blockList[blockList.findIndex(item => item.actived)];
   }, [blockList]);
@@ -19,7 +21,6 @@ export default function useTaskBlockList() {
 
   const addBlock = useCallback(
     block => {
-      console.log('addBlock', block);
       updateState(draft => {
         draft.blockList.push(block);
       });
@@ -29,7 +30,6 @@ export default function useTaskBlockList() {
 
   const updateBlock = useCallback(
     (id, properties) => {
-      console.log('updateBlock', id, properties);
       updateState(draft => {
         let block = draft.blockList.find(item => item.id === id);
         if (block) {
@@ -45,16 +45,15 @@ export default function useTaskBlockList() {
   const activeBlock = useCallback(
     id => {
       updateState(draft => {
-        let blockIndex = draft.blockList.findIndex(item => item.id === id);
-        let activedBlockIndex = draft.blockList.findIndex(item => item.actived);
-        let block = draft.blockList[blockIndex];
-        let activedBlock = draft.blockList[activedBlockIndex];
+        let block = draft.blockList.find(item => item.id === id);
+        let activedBlock = draft.blockList.find(item => item.actived === true);
 
         if (block) {
+          block.actived = true;
+          activedBlockId.current = id;
           if (activedBlock) {
             activedBlock.actived = false;
           }
-          block.actived = true;
         }
       });
     },
@@ -64,18 +63,18 @@ export default function useTaskBlockList() {
   const disactiveBlock = useCallback(
     id => {
       updateState(draft => {
-        let blockIndex = draft.blockList.findIndex(item => item.id === id);
-        let activedBlockIndex = draft.blockList.findIndex(item => item.actived);
-        let block = draft.blockList[blockIndex];
-        let activedBlock = draft.blockList[activedBlockIndex];
+        let block = draft.blockList.find(item => item.id === id);
+        let activedBlock = draft.blockList.find(item => item.actived === true);
 
         if (id) {
           if (block) {
             block.actived = false;
+            activedBlockId.current = null;
           }
         } else {
           if (activedBlock) {
             activedBlock.actived = false;
+            activedBlockId.current = null;
           }
         }
       });
@@ -86,6 +85,7 @@ export default function useTaskBlockList() {
   return {
     blockList,
     activedBlock: activedBlockMemo,
+    activedBlockId: activedBlockId.current,
     findBlockById,
     addBlock,
     updateBlock,
