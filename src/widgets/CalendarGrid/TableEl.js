@@ -1,8 +1,6 @@
 import styled from 'styled-components';
 import { TaskBlock, TaskBlockSolid } from '../index';
 
-const CRITICAL_BLOCK_HEIGHT = 4;
-
 const TableEl = ({
   week,
   blockList,
@@ -14,10 +12,12 @@ const TableEl = ({
   isDrawing,
   isMoving,
   isCreating,
+  criticalBlockHeight,
   onBlockActive,
   onBlockDisactive,
   onBlockPickUp,
   onBlockClick,
+  onBlockResize,
   onMouseUp,
 }) => {
   // console.log('TableEl-update');
@@ -33,7 +33,7 @@ const TableEl = ({
         week.map((unix, index) => {
           let tempBlockVisible =
             (isDrawing || isMoving || isCreating) &&
-            tempBlock.height > CRITICAL_BLOCK_HEIGHT;
+            tempBlock.height > criticalBlockHeight;
 
           tempBlockVisible =
             (tempBlockVisible || isTempBlockVisible) && index === activedCol;
@@ -60,6 +60,7 @@ const TableEl = ({
                         }}
                         onPickUp={onBlockPickUp}
                         onClick={onBlockClick}
+                        onResize={onBlockResize}
                       ></TaskBlockSolid>
                     ),
                 ),

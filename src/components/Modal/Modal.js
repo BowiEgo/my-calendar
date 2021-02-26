@@ -38,7 +38,7 @@ const Modal = ({ isOpen, container, left, onClickOutside, children }) => {
 
 const Container = styled.div`
   position: fixed;
-  top: 45%;
+  top: 40%;
   left: ${props => props.left + 'px' || 0};
   z-index: 9999;
 `;

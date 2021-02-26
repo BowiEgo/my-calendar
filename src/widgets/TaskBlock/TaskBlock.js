@@ -23,6 +23,7 @@ const TaskBlock = forwardRef(
       onMouseUp,
       isSolid,
       children,
+      slots,
     },
     ref,
   ) => {
@@ -99,14 +100,14 @@ const TaskBlock = forwardRef(
         // onMouseMove={e => onMouseMove(e)}
       >
         {height > 50 && (
-          <InnerBlock>
+          <InnerArea>
             <div>{startTime.format('HH:mm')}</div>
             {height > 80 && <Title>{title}</Title>}
             <div>{endTime.format('HH:mm')}</div>
             {children}
-          </InnerBlock>
+          </InnerArea>
         )}
-        <ResizeBlock></ResizeBlock>
+        {slots}
       </Container>
     );
   },
@@ -142,7 +143,7 @@ const Container = styled.div.attrs(props => ({
   color: #446ee4;
 `;
 
-const InnerBlock = styled.div`
+const InnerArea = styled.div`
   height: 100%;
   padding: 10px;
   display: flex;
@@ -155,12 +156,6 @@ const Title = styled.div`
   padding-top: 10px;
   font-weight: 600;
   font-size: 14px;
-`;
-
-const ResizeBlock = styled.div`
-  height: 10px;
-  background: #000,
-  cursor: ns-resizing
 `;
 
 export default TaskBlock;

@@ -1,14 +1,14 @@
 import { useContext } from 'react';
 import styled, { ThemeContext } from 'styled-components';
-import { Button } from '../../components';
+import { Button, CalendarInput } from '../../components';
 
 const TaskEditor = ({ theme, onClickCreate } = {}) => {
   const themeContext = useContext(ThemeContext);
 
   return (
     <Container>
-      <Input></Input>
-      <Input></Input>
+      <TitleInput type={'text'} placeholder={'添加标题'}></TitleInput>
+      <CalendarInput></CalendarInput>
       <Input></Input>
       <TagList></TagList>
       <Divider></Divider>
@@ -29,8 +29,8 @@ const TaskEditor = ({ theme, onClickCreate } = {}) => {
 };
 
 const Container = styled.div`
-  width: 180px;
-  padding: 10px;
+  width: 220px;
+  padding: 10px 20px;
   font-size: 12px;
   display: flex;
   flex-direction: column;
@@ -39,10 +39,18 @@ const Container = styled.div`
 `;
 
 const Input = styled.input`
-  margin: 14px 0;
+  width: 100%;
+  margin-bottom: 14px;
   outline: none;
   border: none;
   border-bottom: 1px solid ${props => props.theme.borderColor};
+`;
+
+const TitleInput = styled(Input)`
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 40px;
+  color: #000;
 `;
 
 const Divider = styled.div`

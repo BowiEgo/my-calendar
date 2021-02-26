@@ -35,6 +35,10 @@ const CalendarGridTable = forwardRef(
 
     // state
     const [isTempBlockVisible, setIsTempBlockVisible] = useState(false);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [isResizing, setIsResizing] = useState(false);
+    const [isMoving, setIsMoving] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
 
     // ref
     const tableBCR = useRef();
@@ -45,18 +49,14 @@ const CalendarGridTable = forwardRef(
       height: 0,
     });
     const mousePositionCache = useRef({ x: 0, y: 0 });
-    const isDrawing = useRef(false);
-    const isMoving = useRef(false);
-    const isCreating = useRef(false);
-
     const tableElRef = useRef();
     const tempBlockRef = useRef();
     const taskBlockListRef = useRef();
 
     const cursor = useMemo(() => {
-      if (isDrawing.current) return 'ns-resize';
-      if (isMoving.current) return 'move';
-    }, [isDrawing, isMoving]);
+      if (isDrawing || isResizing) return 'ns-resize';
+      if (isMoving) return 'move';
+    }, [isDrawing, isResizing, isMoving]);
 
     const dispatch = useDispatch();
     const taskList = useSelector(state => state.taskList);
@@ -85,8 +85,18 @@ const CalendarGridTable = forwardRef(
       [dispatch],
     );
 
+    const closeModal = useCallback(() => {
+      dispatch({
+        type: 'UPDATE_TASK_EDITOR',
+        payload: {
+          isOpen: false,
+          position: null,
+        },
+      });
+    }, []);
+
     const outArea = useCallback(() => {
-      isDrawing.current = false;
+      setIsDrawing(false);
     }, []);
 
     const initTempBlock = useCallback(() => {
@@ -96,10 +106,6 @@ const CalendarGridTable = forwardRef(
       };
     }, []);
 
-    const createTask = useCallback(() => {
-      isCreating.current = true;
-    }, []);
-
     const finishMoving = useCallback(() => {
       updateBlock(activedBlockId, {
         unix: week[activedCol.current],
@@ -107,40 +113,42 @@ const CalendarGridTable = forwardRef(
         height: tempBlock.current.height,
         disabled: false,
       });
-      disactiveBlock();
-      isMoving.current = false;
       if (isTempBlockVisible) {
         setIsTempBlockVisible(false);
       }
       initTempBlock();
-    }, [
-      week,
-      isTempBlockVisible,
-      activedBlockId,
-      updateBlock,
-      disactiveBlock,
-      initTempBlock,
-    ]);
+    }, [week, isTempBlockVisible, activedBlockId, updateBlock, initTempBlock]);
 
     // const finishResizing = useCallback(() => {
     //   handleMouseUp();
     // }, [handleMouseUp]);
 
     const handleBlockActive = (id, block) => {
-      if (!isCreating.current) {
+      if (!isCreating) {
         tempBlock.current = {
           top: block.top,
           height: block.height,
         };
         mousePositionCache.current.y = mousePosition.y;
         activedCol.current = hoveredCol.current;
-        activeBlock(id);
       }
+      activeBlock(id);
+      setIsCreating(false);
+      closeModal();
     };
+
+    const handleBlockDisactive = useCallback(() => {
+      if (isMoving) {
+        finishMoving();
+      }
+      disactiveBlock();
+      setIsResizing(false);
+      setIsMoving(false);
+    }, [isMoving, finishMoving, disactiveBlock]);
 
     const handleBlockPickUp = useCallback(
       id => {
-        if (isMoving.current) {
+        if (isMoving) {
           return;
         }
         const block = findBlockById(id);
@@ -148,21 +156,25 @@ const CalendarGridTable = forwardRef(
           disabled: true,
         });
         if (block) {
-          isMoving.current = true;
+          setIsMoving(true);
           setIsTempBlockVisible(true);
         }
       },
-      [findBlockById, updateBlock],
+      [isMoving, findBlockById, updateBlock],
     );
 
     const handleBlockClick = useCallback((id, element) => {
-      console.log('handleBlockClick', id, element);
+      // console.log('handleBlockClick', id, element);
       // openModal(
       //   getModalOffsetX(
       //     element,
       //     tableBCR.current.left + tableBCR.current.width,
       //   ),
       // );
+    }, []);
+
+    const handleBlockResize = useCallback(id => {
+      setIsResizing(true);
     }, []);
 
     const finishCreateTask = useCallback(() => {
@@ -175,37 +187,58 @@ const CalendarGridTable = forwardRef(
         disabled: false,
         moving: false,
       });
-      isCreating.current = false;
+      setIsCreating(false);
       initTempBlock();
     }, [week, addBlock, initTempBlock]);
 
-    const handleMouseDown = useCallback(() => {
-      if (isCreating.current) {
-        isDrawing.current = false;
+    const handleMouseDown = useCallback(
+      e => {
         initTempBlock();
-      }
-      isDrawing.current = true;
-      tempBlock.current.top = mousePosition.y;
-    }, [mousePosition.y, initTempBlock]);
+
+        if (isCreating) {
+          setIsDrawing(false);
+        }
+        if (!isResizing) {
+          setIsDrawing(true);
+        }
+        tempBlock.current.top = mousePosition.y;
+      },
+      [isResizing, isCreating, mousePosition.y, initTempBlock],
+    );
 
     const handleMouseMove = useCallback(() => {
-      if (isDrawing.current) {
+      if (isDrawing) {
         tempBlock.current.height = mousePosition.y - tempBlock.current.top;
       }
 
       if (activedBlock) {
-        if (!isMoving.current) {
-          isMoving.current = true;
-        }
-        if (!activedBlock.disabled) {
-          updateBlock(activedBlock.id, { disabled: true });
+        if (isResizing) {
+          updateBlock(activedBlock.id, {
+            height: mousePosition.y - activedBlock.top,
+          });
         } else {
-          tempBlock.current.top =
-            mousePosition.y - (mousePositionCache.current.y - activedBlock.top);
-          activedCol.current = hoveredCol.current;
+          if (!isMoving) {
+            setIsMoving(true);
+          }
+
+          if (!activedBlock.disabled) {
+            updateBlock(activedBlock.id, { disabled: true });
+          } else {
+            tempBlock.current.top =
+              mousePosition.y -
+              (mousePositionCache.current.y - activedBlock.top);
+            activedCol.current = hoveredCol.current;
+          }
         }
       }
-    }, [activedBlock, mousePosition.y, updateBlock]);
+    }, [
+      isDrawing,
+      isResizing,
+      isMoving,
+      activedBlock,
+      mousePosition.y,
+      updateBlock,
+    ]);
 
     const handleMouseUp = useCallback(
       e => {
@@ -215,15 +248,12 @@ const CalendarGridTable = forwardRef(
         }
 
         if (activedBlock) {
-          disactiveBlock();
-          if (isMoving.current) {
-            finishMoving();
-            return;
-          }
+          handleBlockDisactive();
+          return;
         }
 
-        if (isCreating.current) {
-          isCreating.current = false;
+        if (isCreating) {
+          setIsCreating(false);
         }
 
         if (tempBlock.current.height > CRITICAL_BLOCK_HEIGHT) {
@@ -233,15 +263,15 @@ const CalendarGridTable = forwardRef(
               tableBCR.current.left + tableBCR.current.width,
             ),
           );
+          setIsCreating(true);
         }
-        createTask();
-        isDrawing.current = false;
+        setIsDrawing(false);
       },
-      [activedBlock, disactiveBlock, finishMoving, openModal, createTask],
+      [activedBlock, isCreating, handleBlockDisactive, openModal],
     );
 
     const handleMouseLeave = useCallback(() => {
-      isDrawing.current = false;
+      setIsDrawing(false);
     }, []);
 
     const handleKeyPress = useCallback(e => {
@@ -264,10 +294,10 @@ const CalendarGridTable = forwardRef(
       col = col === 7 ? 6 : col;
       hoveredCol.current = col;
 
-      if (isDrawing.current) {
+      if (isDrawing) {
         activedCol.current = hoveredCol.current;
       }
-    }, [mousePosition, outArea]);
+    }, [isDrawing, mousePosition, outArea]);
 
     useEffect(() => {
       if (taskList.length === 0) {
@@ -284,13 +314,15 @@ const CalendarGridTable = forwardRef(
       tempBlock: tempBlock.current,
       tableBCR: tableBCR.current,
       activedCol: activedCol.current,
-      isDrawing: isDrawing.current,
-      isMoving: isMoving.current,
-      isCreating: isCreating.current,
+      isDrawing: isDrawing,
+      isMoving: isMoving,
+      isCreating: isCreating,
+      criticalBlockHeight: CRITICAL_BLOCK_HEIGHT,
       onBlockActive: handleBlockActive,
-      onBlockDisactive: disactiveBlock,
+      onBlockDisactive: handleBlockDisactive,
       onBlockPickUp: handleBlockPickUp,
       onBlockClick: handleBlockClick,
+      onBlockResize: handleBlockResize,
       onMouseUp: handleMouseUp,
     };
 
