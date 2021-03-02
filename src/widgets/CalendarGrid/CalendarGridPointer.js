@@ -56,10 +56,13 @@ const CalendarGridPointer = ({ tableHeight, tableWidth, onInitialed }) => {
   );
 };
 
-const Container = styled.div`
+const Container = styled.div.attrs(props => ({
+  style: {
+    top: props.top + 'px',
+    display: props.initialed ? 'block' : 'none',
+  },
+}))`
   position: absolute;
-  top: ${props => props.top + 'px'};
-  display: ${props => (props.initialed ? 'block' : 'none')};
 `;
 
 const PointerLabel = styled.div`

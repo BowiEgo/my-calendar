@@ -3,6 +3,7 @@ import produce from 'immer';
 const initState = {
   selectedDate: null,
   selectedWeek: [],
+  activedCol: -1,
   isTaskEditorOpen: false,
   taskEditorPosition: 0,
   taskList: [],
@@ -18,6 +19,10 @@ const reducer = produce((draft = initState, action) => {
 
     case 'CHANGE_SELECTED_WEEK':
       draft.selectedWeek = payload.week;
+      return draft;
+
+    case 'CHANGE_ACTIVED_COL':
+      draft.activedCol = payload.col;
       return draft;
 
     // 任务编辑弹窗

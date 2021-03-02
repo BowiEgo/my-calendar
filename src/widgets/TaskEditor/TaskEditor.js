@@ -13,7 +13,6 @@ function getOptions() {
     return i * timeGap;
   });
   return timeData.map(seconds => {
-    console.log(seconds);
     return {
       label: moment(seconds).format('hh:mm'),
       unix: seconds,
@@ -21,15 +20,14 @@ function getOptions() {
   });
 }
 
-const TaskEditor = ({ theme, onDateChange, onClickCreate } = {}) => {
+const TaskEditor = ({ lastSelectedDate, onDateChange, onClickCreate } = {}) => {
   const timeOptions = useRef(getOptions());
 
   const themeContext = useContext(ThemeContext);
 
-  const handleDateChange = useCallback(unix => {
-    console.log('handleDateChanged', unix);
-
-    onDateChange && onDateChange(unix);
+  const handleDateChange = useCallback((unix, week) => {
+    console.info('handleDateChange', unix);
+    onDateChange && onDateChange(unix, week);
   }, []);
 
   const handleStartTimeChanged = useCallback(value => {
@@ -43,7 +41,10 @@ const TaskEditor = ({ theme, onDateChange, onClickCreate } = {}) => {
   return (
     <Container>
       <TitleInput type={'text'} placeholder={'添加标题'}></TitleInput>
-      <CalendarInput onChange={handleDateChange}></CalendarInput>
+      <CalendarInput
+        selectedDate={lastSelectedDate}
+        onChange={handleDateChange}
+      ></CalendarInput>
       <SelectGroup>
         <Select
           width={90}

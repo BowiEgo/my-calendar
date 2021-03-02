@@ -5,7 +5,7 @@ import { Calendar } from '../../widgets';
 import useClickOutside from '../../utils/useClickOutside';
 import moment from 'moment';
 
-const CalendarInput = ({ onChange }) => {
+const CalendarInput = ({ selectedDate, onChange }) => {
   const themeContext = useContext(ThemeContext);
 
   // state
@@ -27,13 +27,13 @@ const CalendarInput = ({ onChange }) => {
   });
 
   const changeSelectedDate = useCallback(
-    unix => {
+    (unix, week) => {
       updateState(draft => {
         draft.date = unix;
         draft.isOpen = false;
       });
 
-      onChange && onChange(unix);
+      onChange && onChange(unix, week);
     },
     [updateState],
   );
@@ -53,6 +53,7 @@ const CalendarInput = ({ onChange }) => {
             type={'input'}
             width={200}
             fontSize={12}
+            date={selectedDate}
             onChange={changeSelectedDate}
           ></Calendar>
         </Popup>

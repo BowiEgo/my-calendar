@@ -33,6 +33,7 @@ const initialState = {
 const Calendar = forwardRef(
   (
     {
+      date,
       onChange,
       onChangeWeek,
       type = 'default',
@@ -54,7 +55,7 @@ const Calendar = forwardRef(
     // ref
     const containerRef = useRef(ref);
     const todayUnix = useRef(+moment().startOf('day').format('x'));
-    const selectedDate = useRef();
+    const selectedDate = useRef(date);
     const startOfCurrentMonth = useRef(startOfCurrentMonthTmp);
     const initialWeekIndex = useRef(-1);
 
@@ -72,6 +73,10 @@ const Calendar = forwardRef(
       fixY: 2,
       resolveFn: () => {},
     });
+
+    useEffect(() => {
+      selectedDate.current = date;
+    }, [date]);
 
     useEffect(() => {
       if (indexOfSelectedWeek > -1) {
@@ -116,13 +121,12 @@ const Calendar = forwardRef(
       unix => {
         if (unix === selectedDate.current) return;
         selectedDate.current = unix;
-        onChange && onChange(unix);
+        const row = getRow(unix, startOfCurrentMonth.current);
+        onChange && onChange(unix, calendar[row]);
 
         const weekStartUnix = +moment(unix).startOf('week').format('x');
 
         if (weekStartUnix !== startOfSelectedWeek) {
-          const row = getRow(unix, startOfCurrentMonth.current);
-
           updateSSW(weekStartUnix);
           updateState(draft => {
             draft.startOfSelectedCalendar = calendar[0][0];
@@ -134,6 +138,15 @@ const Calendar = forwardRef(
     );
 
     useImperativeHandle(ref, () => ({
+      changeWeek: week => {
+        const weekIndex = calendar.indexOf(week);
+        console.log('calendar-change-week', week, weekIndex, calendar);
+        if (weekIndex > -1) {
+          updateState(draft => {
+            draft.indexOfSelectedWeek = weekIndex;
+          });
+        }
+      },
       prevWeek: () => {
         if (indexOfSelectedWeek > 0) {
           initialWeekIndex.current = indexOfSelectedWeek;

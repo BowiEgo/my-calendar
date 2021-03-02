@@ -3,12 +3,13 @@ import {
   useEffect,
   useRef,
   Fragment,
-  forwardRef,
-  useImperativeHandle,
+  useCallback,
+  createContext,
 } from 'react';
 import styled from 'styled-components';
 import moment from 'moment';
 import { Calendar as CalendarIcon } from 'react-feather';
+import GridContext from './context';
 import {
   CalendarGridTable as GridTable,
   CalendarGridPointer as GridPointer,
@@ -19,14 +20,14 @@ import usePrevious from '../../utils/usePrevious';
 
 let bid = 0;
 
-const CalendarGrid = forwardRef(({ selectedDate, week, scrollTop }, ref) => {
+const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
   // console.log('grid-update');
 
   // ref
   const weekdaysShort = useRef(moment.weekdaysShort());
   const containerRef = useRef();
+  const weekElRef = useRef();
   const scrollRef = useRef();
-  const tableRef = useRef();
   const labelElRef = useRef();
   const motionTable = useRef();
   const tableHeight = useRef(0);
@@ -39,11 +40,6 @@ const CalendarGrid = forwardRef(({ selectedDate, week, scrollTop }, ref) => {
   // motion
   const { motion, motionProps, motionHandlers } = useGridMotion();
 
-  // mounted
-  useEffect(() => {
-    labelWidth.current = labelElRef.current.getBoundingClientRect().width;
-  }, []);
-
   const { mousePosition, bind: mouseEvent } = useMousePosition(pos => {
     let posX = pos.x - labelWidth.current;
 
@@ -53,6 +49,11 @@ const CalendarGrid = forwardRef(({ selectedDate, week, scrollTop }, ref) => {
     };
   });
 
+  // mounted
+  useEffect(() => {
+    labelWidth.current = labelElRef.current.getBoundingClientRect().width;
+  }, []);
+
   useEffect(() => {
     if ((week !== undefined) & (oldWeekValue !== undefined)) {
       if (week[0] < oldWeekValue[0]) {
@@ -61,7 +62,7 @@ const CalendarGrid = forwardRef(({ selectedDate, week, scrollTop }, ref) => {
         motionHandlers.next();
       }
     }
-  }, [week]);
+  }, [week, oldWeekValue, motionHandlers]);
 
   // method
   const handleTableMounted = tableBCR => {
@@ -74,13 +75,7 @@ const CalendarGrid = forwardRef(({ selectedDate, week, scrollTop }, ref) => {
       pointerTop - scrollRef.current.getBoundingClientRect().height / 2;
   };
 
-  useImperativeHandle(ref, () => ({
-    changeTaskDate: unix => {
-      tableRef.current.changeTempBlockDate(unix);
-    },
-  }));
-
-  const renderWeekList = () => {
+  const renderWeekList = useCallback(() => {
     return week.map((unix, idx) => {
       const date = moment(unix);
       return (
@@ -99,7 +94,7 @@ const CalendarGrid = forwardRef(({ selectedDate, week, scrollTop }, ref) => {
         </motion.div>
       );
     });
-  };
+  }, [week, selectedDate, motionProps]);
 
   // TimeLabel
   const renderTimeLabel = () => {
@@ -124,7 +119,7 @@ const CalendarGrid = forwardRef(({ selectedDate, week, scrollTop }, ref) => {
 
   return (
     <GridContainer ref={containerRef}>
-      <GridWeekContainer>
+      <GridWeekContainer ref={weekElRef}>
         <GridWeek>
           <WeekLabelContainer>
             <WeekLabel>
@@ -143,20 +138,30 @@ const CalendarGrid = forwardRef(({ selectedDate, week, scrollTop }, ref) => {
             onInitialed={handlePointerInitialed}
           ></GridPointer>
           <motion.div {...motionProps} style={{ height: '100%', flex: 1 }}>
-            <GridTable
-              ref={tableRef}
-              week={week}
-              mousePosition={mousePosition}
-              onMounted={handleTableMounted}
-            ></GridTable>
+            <GridContext.Provider
+              value={{
+                girdEl: containerRef.current,
+                labelEl: labelElRef.current,
+                scrollEl: scrollRef.current,
+                weekEl: weekElRef.current,
+              }}
+            >
+              <GridTable
+                tempBlockContainer={containerRef.current}
+                week={week}
+                mousePosition={mousePosition}
+                onMounted={handleTableMounted}
+              ></GridTable>
+            </GridContext.Provider>
           </motion.div>
         </GridContent>
       </GridContentScroll>
     </GridContainer>
   );
-});
+};
 
 const GridContainer = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;

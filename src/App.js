@@ -12,71 +12,78 @@ import {
   NavBar,
   TaskEditor,
 } from './widgets';
+import moment from 'moment';
 
 function App() {
   console.log('app-update');
   // state
+  // const [weekList, setWeekList] = useState([]);
   const [{ weekList }, updateState] = useImmer({
     weekList: [],
   });
 
   const rootElRef = useRef();
   const calendarElRef = useRef();
-  const calendarGridRef = useRef();
 
   // store
   const selectedDate = useSelector(state => state.selectedDate);
-  const selectedWeek = useSelector(state => state.selectedWeek);
+  // const selectedWeek = useSelector(state => state.selectedWeek);
   const isTaskEditorOpen = useSelector(state => state.isTaskEditorOpen);
   const taskEditorPosition = useSelector(state => state.taskEditorPosition);
   const dispatch = useDispatch();
 
   useState(() => {
-    console.log('before-mounted');
+    console.log('before-app-mounted');
   });
 
-  useEffect(() => {
-    console.log(rootElRef.current);
+  // method
+  const changeSelectedDate = useCallback(
+    unix => {
+      dispatch({
+        type: 'CHANGE_SELECTED_DATE',
+        payload: {
+          date: unix,
+        },
+      });
+    },
+    [dispatch],
+  );
+
+  const changeGridType = useCallback(type => {
+    console.log('changeGridType', type);
   }, []);
 
-  // method
-  function changeSelectedDate(unix) {
-    dispatch({
-      type: 'CHANGE_SELECTED_DATE',
-      payload: {
-        date: unix,
-      },
-    });
-  }
-
-  function changeGridType(type) {
-    console.log('changeGridType', type);
-  }
-
-  function changeToPrev() {
+  const changeToPrev = useCallback(() => {
     calendarElRef.current && calendarElRef.current.prevWeek();
-  }
+  }, []);
 
-  function changeToNext() {
+  const changeToNext = useCallback(() => {
     calendarElRef.current && calendarElRef.current.nextWeek();
-  }
+  }, []);
 
-  const updateWeekList = week => {
-    updateState(draft => {
-      draft.weekList = week;
-    });
-  };
+  const updateWeekList = useCallback(
+    week => {
+      console.log('updateWeekList', week);
+      updateState(draft => {
+        draft.weekList = week;
+      });
+    },
+    [updateState],
+  );
 
-  const toggleModal = (isOpen = false) => {
-    dispatch({
-      type: 'UPDATE_TASK_EDITOR',
-      payload: {
-        isOpen: isOpen,
-      },
-    });
-  };
+  const toggleModal = useCallback(
+    (isOpen = false) => {
+      dispatch({
+        type: 'UPDATE_TASK_EDITOR',
+        payload: {
+          isOpen: isOpen,
+        },
+      });
+    },
+    [dispatch],
+  );
 
-  const createTask = () => {
+  const createTask = useCallback(() => {
     dispatch({
       type: 'ADD_TASK',
       payload: {
@@ -84,11 +91,21 @@ function App() {
       },
     });
     toggleModal(false);
-  };
+  }, [dispatch, toggleModal]);
 
-  const handleEditorDateChange = unix => {
-    calendarGridRef.current.changeTaskDate(unix);
-  };
+  const handleEditorDateChange = useCallback(
+    (unix, week) => {
+      calendarElRef.current && calendarElRef.current.changeWeek(week);
+      changeSelectedDate(unix);
+      dispatch({
+        type: 'CHANGE_ACTIVED_COL',
+        payload: {
+          col: week.indexOf(unix),
+        },
+      });
+    },
+    [changeSelectedDate, dispatch],
+  );
 
   return (
     <ThemeProvider theme={main}>
@@ -101,7 +118,6 @@ function App() {
             onNext={changeToNext}
           ></CalendarType>
           <CalendarGrid
-            ref={calendarGridRef}
             selectedDate={selectedDate}
             week={weekList}
           ></CalendarGrid>
@@ -120,6 +136,7 @@ function App() {
           <ScrollContainer>
             <Calendar
               ref={calendarElRef}
+              date={selectedDate}
               onChange={changeSelectedDate}
               onChangeWeek={updateWeekList}
             ></Calendar>
@@ -135,6 +152,7 @@ function App() {
           onClickOutside={() => toggleModal(false)}
         >
           <TaskEditor
+            lastSelectedDate={selectedDate}
             onDateChange={handleEditorDateChange}
             onClickCreate={createTask}
           ></TaskEditor>

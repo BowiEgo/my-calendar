@@ -1,7 +1,15 @@
+import { useMemo, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import styled from 'styled-components';
+import GridContext from './context';
 import { TaskBlock, TaskBlockSolid } from '../index';
 
+const Portal = function ({ children, container }, ref) {
+  return createPortal(children, container || document.body);
+};
+
 const TableEl = ({
+  tempBlockContainer,
   week,
   blockList,
   tempBlockRef,
@@ -27,16 +35,42 @@ const TableEl = ({
     .fill(0)
     .map(() => ht++);
 
+  const gridContext = useContext(GridContext);
+
+  const tempBlockVisible = useMemo(() => {
+    return (
+      tableBCR !== undefined &&
+      (isDrawing || isCreating) &&
+      tempBlock.height > criticalBlockHeight
+    );
+  }, [tableBCR, isDrawing, isCreating, tempBlock, criticalBlockHeight]);
+
+  const tempBlockPos = useMemo(() => {
+    const { gridEl, weekEl, labelEl, scrollEl } = gridContext;
+
+    let x =
+      tempBlock.left + (labelEl ? labelEl.getBoundingClientRect().width : 0);
+    let y =
+      tempBlock.top -
+      (scrollEl ? scrollEl.scrollTop : 0) +
+      (weekEl ? weekEl.getBoundingClientRect().height : 0);
+
+    return {
+      x: x,
+      y: y,
+    };
+  }, [tempBlock, gridContext]);
+
   return (
     <>
       {[
         week.map((unix, index) => {
-          let tempBlockVisible =
-            (isDrawing || isMoving || isCreating) &&
-            tempBlock.height > criticalBlockHeight;
+          // let tempBlockVisible =
+          //   (isDrawing || isMoving || isCreating) &&
+          //   tempBlock.height > criticalBlockHeight;
 
-          tempBlockVisible =
-            (tempBlockVisible || isTempBlockVisible) && index === activedCol;
+          // tempBlockVisible =
+          //   (tempBlockVisible || isTempBlockVisible) && index === activedCol;
 
           return (
             <GridTableCol key={index}>
@@ -64,28 +98,32 @@ const TableEl = ({
                       ></TaskBlockSolid>
                     ),
                 ),
-                tempBlockVisible && (
-                  <TaskBlock
-                    ref={tempBlockRef}
-                    key={-1}
-                    unix={week[activedCol]}
-                    top={tempBlock.top}
-                    height={tempBlock.height}
-                    outerHeight={tableBCR.height}
-                    moving={isMoving}
-                    resizing={isDrawing}
-                    // finishMoving={finishMoving}
-                    // finishResizing={finishResizing}
-                    onMouseUp={() => {
-                      onMouseUp();
-                    }}
-                    shadow
-                  />
-                ),
               ]}
             </GridTableCol>
           );
         }),
+        <Portal container={tempBlockContainer} key={'portal'}>
+          {tempBlockVisible && (
+            <TaskBlock
+              ref={tempBlockRef}
+              key={-1}
+              unix={week[activedCol]}
+              left={tempBlockPos.x}
+              top={tempBlockPos.y}
+              width={tableBCR.width / 7}
+              height={tempBlock.height}
+              outerHeight={tableBCR.height}
+              moving={isMoving}
+              resizing={isDrawing}
+              // finishMoving={finishMoving}
+              // finishResizing={finishResizing}
+              onMouseUp={() => {
+                onMouseUp();
+              }}
+              shadow
+            />
+          )}
+        </Portal>,
       ]}
     </>
   );

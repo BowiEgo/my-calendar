@@ -9,7 +9,9 @@ const TaskBlock = forwardRef(
       unix,
       title = '无标题',
       type = 'work',
+      left,
       top,
+      width,
       height,
       outerHeight,
       shadow,
@@ -88,7 +90,9 @@ const TaskBlock = forwardRef(
     return (
       <Container
         ref={ref}
+        left={left}
         top={top}
+        width={width}
         height={height}
         shadow={shadow}
         disabled={disabled}
@@ -123,10 +127,12 @@ function getRelatveTime(y, outerHeight, date) {
 
 const Container = styled.div.attrs(props => ({
   style: {
+    width: props.width ? props.width + 'px' : 'calc(100% - 8px)',
     height: props.height + 'px',
     cursor: props.cursor,
     opacity: props.disabled ? '0.3' : 1,
     transform: `translate3d(0, ${props.top}px, 0)`,
+    left: `${props.left ? props.left + 'px' : '4px'}`,
     boxShadow: props.shadow
       ? `0 3px 6px -4px rgba(0, 0, 0, 0.12),
       0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)`
@@ -135,8 +141,6 @@ const Container = styled.div.attrs(props => ({
 }))`
   position: absolute;
   top: 0;
-  left: 4px;
-  width: calc(100% - 8px);
   background-color: #e9f2fb;
   border-radius: 4px;
   font-size: 12px;
