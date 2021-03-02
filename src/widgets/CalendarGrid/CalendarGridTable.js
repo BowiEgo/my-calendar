@@ -5,6 +5,7 @@ import {
   useRef,
   useCallback,
   forwardRef,
+  useImperativeHandle,
 } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
@@ -277,6 +278,13 @@ const CalendarGridTable = forwardRef(
     const handleKeyPress = useCallback(e => {
       // console.log(e);
     }, []);
+
+    useImperativeHandle(ref, () => ({
+      changeTempBlockDate: unix => {
+        console.log('changeTempBlockDate', unix);
+        tempBlock.current.unix = unix;
+      },
+    }));
 
     useEffect(() => {
       tableBCR.current = tableElRef.current.getBoundingClientRect();

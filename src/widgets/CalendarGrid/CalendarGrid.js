@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, Fragment, forwardRef } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  Fragment,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import styled from 'styled-components';
 import moment from 'moment';
 import { Calendar as CalendarIcon } from 'react-feather';
@@ -12,13 +19,14 @@ import usePrevious from '../../utils/usePrevious';
 
 let bid = 0;
 
-const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
+const CalendarGrid = forwardRef(({ selectedDate, week, scrollTop }, ref) => {
   // console.log('grid-update');
 
   // ref
   const weekdaysShort = useRef(moment.weekdaysShort());
   const containerRef = useRef();
   const scrollRef = useRef();
+  const tableRef = useRef();
   const labelElRef = useRef();
   const motionTable = useRef();
   const tableHeight = useRef(0);
@@ -65,6 +73,12 @@ const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
     scrollRef.current.scrollTop =
       pointerTop - scrollRef.current.getBoundingClientRect().height / 2;
   };
+
+  useImperativeHandle(ref, () => ({
+    changeTaskDate: unix => {
+      tableRef.current.changeTempBlockDate(unix);
+    },
+  }));
 
   const renderWeekList = () => {
     return week.map((unix, idx) => {
@@ -130,6 +144,7 @@ const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
           ></GridPointer>
           <motion.div {...motionProps} style={{ height: '100%', flex: 1 }}>
             <GridTable
+              ref={tableRef}
               week={week}
               mousePosition={mousePosition}
               onMounted={handleTableMounted}
@@ -139,7 +154,7 @@ const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
       </GridContentScroll>
     </GridContainer>
   );
-};
+});
 
 const GridContainer = styled.div`
   display: flex;

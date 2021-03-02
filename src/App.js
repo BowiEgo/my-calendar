@@ -22,6 +22,7 @@ function App() {
 
   const rootElRef = useRef();
   const calendarElRef = useRef();
+  const calendarGridRef = useRef();
 
   // store
   const selectedDate = useSelector(state => state.selectedDate);
@@ -85,6 +86,10 @@ function App() {
     toggleModal(false);
   };
 
+  const handleEditorDateChange = unix => {
+    calendarGridRef.current.changeTaskDate(unix);
+  };
+
   return (
     <ThemeProvider theme={main}>
       <AppBody ref={rootElRef}>
@@ -96,6 +101,7 @@ function App() {
             onNext={changeToNext}
           ></CalendarType>
           <CalendarGrid
+            ref={calendarGridRef}
             selectedDate={selectedDate}
             week={weekList}
           ></CalendarGrid>
@@ -128,7 +134,10 @@ function App() {
           container={rootElRef.current}
           onClickOutside={() => toggleModal(false)}
         >
-          <TaskEditor onClickCreate={createTask}></TaskEditor>
+          <TaskEditor
+            onDateChange={handleEditorDateChange}
+            onClickCreate={createTask}
+          ></TaskEditor>
         </Modal>
       </AppBody>
     </ThemeProvider>

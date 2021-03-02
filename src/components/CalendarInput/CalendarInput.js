@@ -1,16 +1,17 @@
 import { useCallback, useContext, useMemo, useRef } from 'react';
 import { useImmer } from 'use-immer';
 import styled, { ThemeContext } from 'styled-components';
-import moment from 'moment';
 import { Calendar } from '../../widgets';
 import useClickOutside from '../../utils/useClickOutside';
-import { Select, Option } from '../../components';
+import moment from 'moment';
 
-const CalendarInput = () => {
+const CalendarInput = ({ onChange }) => {
   const themeContext = useContext(ThemeContext);
 
   // state
   const [{ date, isOpen }, updateState] = useImmer({ date: 0, isOpen: false });
+
+  const popupRef = useRef();
 
   const dateStr = useMemo(() => {
     const weekDay = ['日', '一', '二', '三', '四', '五', '六'][
@@ -18,23 +19,6 @@ const CalendarInput = () => {
     ];
     return moment(date).format('M月DD日') + `(星期${weekDay})`;
   }, [date]);
-
-  const popupRef = useRef();
-
-  const timeGap = 15 * 60 * 1000;
-  const timeNum = (24 * 60 * 60 * 1000) / timeGap;
-  let timeData = Array(timeNum).fill(0);
-  let i = -1;
-  timeData = timeData.map(() => {
-    i++;
-    return i * timeGap;
-  });
-  const timeOptions = timeData.map(seconds => {
-    console.log(date);
-    moment(date + seconds).format('mm:ss');
-  });
-
-  console.log('timeData', timeData, timeOptions);
 
   useClickOutside(popupRef, () => {
     updateState(draft => {
@@ -46,7 +30,10 @@ const CalendarInput = () => {
     unix => {
       updateState(draft => {
         draft.date = unix;
+        draft.isOpen = false;
       });
+
+      onChange && onChange(unix);
     },
     [updateState],
   );
@@ -104,6 +91,7 @@ const Popup = styled.div`
   align-items: center;
   background-color: #fff;
   box-shadow: 0 3px 6px 3px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
 `;
 
 export default CalendarInput;
