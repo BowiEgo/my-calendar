@@ -53,7 +53,6 @@ const Calendar = forwardRef(
     ] = useImmer(initialState);
 
     // ref
-    const containerRef = useRef(ref);
     const todayUnix = useRef(+moment().startOf('day').format('x'));
     const selectedDate = useRef(date);
     const startOfCurrentMonth = useRef(startOfCurrentMonthTmp);
@@ -225,7 +224,7 @@ const Calendar = forwardRef(
       });
 
     return (
-      <Container ref={containerRef} width={width}>
+      <Container width={width}>
         <CalendarHeader height={width ? width / 7 : null}>
           <MonthHeader>
             {moment(startOfCurrentMonth.current).format('YYYY年 MM月')}

@@ -25,7 +25,6 @@ const TableEl = forwardRef(
       tempBlockContainer,
       week,
       blockList,
-      tempBlockRef,
       isTempBlockVisible,
       tempBlock,
       tableBCR,
@@ -44,7 +43,7 @@ const TableEl = forwardRef(
     ref,
   ) => {
     // console.log('TableEl-update');
-    const tempBlockElRef = useRef(tempBlockRef);
+    const tempBlockRef = useRef();
 
     const gridContext = useContext(GridContext);
     const { gridEl, weekEl, labelEl, scrollEl } = gridContext;
@@ -81,7 +80,10 @@ const TableEl = forwardRef(
 
     useImperativeHandle(ref, () => ({
       getTempTask: () => {
-        return tempBlockElRef.current.getTask();
+        return tempBlockRef.current.getTask();
+      },
+      getTempBlockElement: () => {
+        return tempBlockRef.current.getElement();
       },
     }));
 
@@ -127,10 +129,11 @@ const TableEl = forwardRef(
             );
           }),
           <Portal container={tempBlockContainer} key={'portal'}>
-            {tempBlockVisible && (
+            {tableBCR && (
               <TaskBlock
+                show={tempBlockVisible}
                 style={{ zIndex: 0 }}
-                ref={tempBlockElRef}
+                ref={tempBlockRef}
                 key={-1}
                 unix={week[activedCol]}
                 top={tempBlock.top}

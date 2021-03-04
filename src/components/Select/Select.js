@@ -1,16 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useImmer } from 'use-immer';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import useClickOutside from '../../utils/useClickOutside';
 import SelectContext from './SelectContext';
 
-const Select = ({ defaultValue, width, children }) => {
+const Select = ({ defaultValue, width, children, onChange }) => {
   // state
-  const [
-    { value, options, selectedOption, isOpen, onChange },
-    updateState,
-  ] = useImmer({
+  const [{ value, options, selectedOption, isOpen }, updateState] = useImmer({
     value: null,
     options: children.map(child => child.props),
     selectedOption:
@@ -22,8 +19,9 @@ const Select = ({ defaultValue, width, children }) => {
     isOpen: false,
   });
 
-  // reft
+  // ref
   const containerRef = useRef();
+  const listElRef = useRef();
 
   // method
   const handleClick = () => {
@@ -33,6 +31,7 @@ const Select = ({ defaultValue, width, children }) => {
   };
 
   const setSelectedValue = value => {
+    console.log('setSelectedValue', value);
     updateState(draft => {
       draft.selectedOption = options.find(option => option.value === value);
       draft.value = value;
@@ -52,6 +51,20 @@ const Select = ({ defaultValue, width, children }) => {
     });
   }, [value, updateState]);
 
+  useEffect(() => {
+    if (listElRef.current) {
+      // const bcr = listElRef.current.getBoundingClientRect();
+      // const height = bcr.height;
+      console.log(
+        options.map(o => o.value).indexOf(defaultValue),
+        options.length,
+      );
+      listElRef.current.scrollTop =
+        200 *
+        (options.map(o => o.value).indexOf(defaultValue) / options.length);
+    }
+  });
+
   return (
     <Container ref={containerRef} width={width}>
       <Input onClick={handleClick}>
@@ -67,7 +80,7 @@ const Select = ({ defaultValue, width, children }) => {
             transition={{ duration: 0.2 }}
           >
             <SelectContext.Provider value={{ setSelectedValue }}>
-              <List>{children}</List>
+              <List ref={listElRef}>{children}</List>
             </SelectContext.Provider>
           </motion.div>
         )}

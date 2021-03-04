@@ -2,6 +2,7 @@ import {
   useState,
   useRef,
   useMemo,
+  useEffect,
   forwardRef,
   useImperativeHandle,
 } from 'react';
@@ -15,6 +16,7 @@ const TaskBlock = forwardRef(
       unix,
       title = '无标题',
       type = 'work',
+      show = false,
       top,
       x,
       y,
@@ -40,7 +42,7 @@ const TaskBlock = forwardRef(
     // states
     const [isDragging, setIsDragging] = useState(false);
 
-    const containerRef = useRef(ref);
+    const containerRef = useRef();
 
     // memo
     const date = useMemo(() => moment(unix).startOf('day'), [unix]);
@@ -105,11 +107,15 @@ const TaskBlock = forwardRef(
           end: +endTime.format('x'),
         };
       },
+      getElement: () => {
+        return containerRef.current;
+      },
     }));
 
     return (
       <Container
         ref={containerRef}
+        show={show}
         top={top}
         x={x}
         y={y}
@@ -148,6 +154,7 @@ function getRelatveTime(y, outerHeight, date) {
 
 const Container = styled.div.attrs(props => ({
   style: {
+    display: props.show ? 'block' : 'none',
     width: props.width ? props.width + 'px' : 'calc(100% - 8px)',
     height: props.height + 'px',
     cursor: props.cursor,

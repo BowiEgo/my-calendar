@@ -1,5 +1,5 @@
 import { useRef, useCallback, useContext } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import styled, { ThemeContext } from 'styled-components';
 import { Button, CalendarInput, Select, Option } from '../../components';
 import moment from 'moment';
@@ -38,6 +38,7 @@ const TaskEditor = ({
   const timeOptions = useRef(getOptions());
 
   const tempTask = useSelector(state => state.tempTask);
+  const dispatch = useDispatch();
 
   const themeContext = useContext(ThemeContext);
 
@@ -50,6 +51,14 @@ const TaskEditor = ({
 
   const handleStartTimeChanged = useCallback(value => {
     console.log('handleStartTimeChanged', value);
+    dispatch({
+      type: 'UPDATE_TEMP_TASK',
+      payload: {
+        tempTask: {
+          start: moment(startTime).startOf('day') + value,
+        },
+      },
+    });
   }, []);
 
   const handleEndTimeChanged = useCallback(value => {
