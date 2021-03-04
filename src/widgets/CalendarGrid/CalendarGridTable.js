@@ -20,6 +20,9 @@ let bid = 0;
 const CRITICAL_BLOCK_HEIGHT = 4;
 const MODAL_WIDTH = 220;
 
+const TIME_GAP = 15 * 60 * 1000;
+const TIME_NUM = (24 * 60 * 60 * 1000) / TIME_GAP;
+
 const getModalPos = (element, boundary, offset) => {
   let x = 0;
   if (element) {
@@ -30,6 +33,19 @@ const getModalPos = (element, boundary, offset) => {
     }
   }
   return x;
+};
+
+const roundPosY = (y, outerY, num) => {
+  let multi = Math.ceil(y / (outerY / num));
+  console.log(
+    'roundPosY',
+    y,
+    outerY,
+    num,
+    multi - 1,
+    (outerY / num) * (multi - 1),
+  );
+  return (outerY / num) * (multi - 1);
 };
 
 const CalendarGridTable = (
@@ -54,7 +70,8 @@ const CalendarGridTable = (
     height: 0,
   });
   const mousePositionCache = useRef({ x: 0, y: 0 });
-  const tableElRef = useRef();
+  const tableContainerRef = useRef();
+  const tableRef = useRef();
   const tempBlockRef = useRef();
   const taskBlockListRef = useRef();
 
@@ -75,7 +92,7 @@ const CalendarGridTable = (
   }, [gridEl]);
   const labelWidth = useMemo(() => {
     return labelEl ? labelEl.getBoundingClientRect().width : 0;
-  });
+  }, [labelEl]);
 
   const {
     blockList,
@@ -232,7 +249,11 @@ const CalendarGridTable = (
         setIsDrawing(true);
       }
 
-      tempBlock.current.top = mousePosition.y;
+      tempBlock.current.top = roundPosY(
+        mousePosition.y,
+        tableBCR.current.height,
+        TIME_NUM,
+      );
       tempBlock.current.left =
         (tableBCR.current.width / 7) * hoveredCol.current;
     },
@@ -241,7 +262,11 @@ const CalendarGridTable = (
 
   const handleMouseMove = useCallback(() => {
     if (isDrawing) {
-      tempBlock.current.height = mousePosition.y - tempBlock.current.top;
+      tempBlock.current.height = roundPosY(
+        mousePosition.y - tempBlock.current.top,
+        tableBCR.current.height,
+        TIME_NUM,
+      );
     }
 
     if (activedBlock) {
@@ -290,6 +315,23 @@ const CalendarGridTable = (
       }
 
       if (tempBlock.current.height > CRITICAL_BLOCK_HEIGHT) {
+        let tempTask = tableRef.current.getTempTask();
+        dispatch({
+          type: 'UPDATE_TEMP_TASK',
+          payload: {
+            tempTask: tempTask,
+          },
+        });
+
+        dispatch({
+          type: 'CHANGE_SELECTED_DATE',
+          payload: {
+            date: week[activedCol],
+          },
+        });
+
+        setIsCreating(true);
+
         openModal(
           getModalPos(
             tempBlockRef.current,
@@ -297,13 +339,6 @@ const CalendarGridTable = (
             gridLeft + labelWidth,
           ),
         );
-        setIsCreating(true);
-        dispatch({
-          type: 'CHANGE_SELECTED_DATE',
-          payload: {
-            date: week[activedCol],
-          },
-        });
       }
       setIsDrawing(false);
     },
@@ -329,7 +364,7 @@ const CalendarGridTable = (
   }, []);
 
   useEffect(() => {
-    tableBCR.current = tableElRef.current.getBoundingClientRect();
+    tableBCR.current = tableContainerRef.current.getBoundingClientRect();
     onMounted(tableBCR.current);
   }, [onMounted]);
 
@@ -345,15 +380,7 @@ const CalendarGridTable = (
         ),
       );
     }
-  }, [
-    week,
-    activedCol,
-    isTaskEditorOpen,
-    gridLeft,
-    labelWidth,
-    openModal,
-    getModalPos,
-  ]);
+  }, [week, activedCol, isTaskEditorOpen, gridLeft, labelWidth, openModal]);
 
   useEffect(() => {
     tempBlock.current.left = (tableBCR.current.width / 7) * activedColStore;
@@ -405,7 +432,7 @@ const CalendarGridTable = (
 
   return (
     <Container
-      ref={tableElRef}
+      ref={tableContainerRef}
       cursor={cursor}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -413,7 +440,7 @@ const CalendarGridTable = (
       onMouseLeave={handleMouseLeave}
       onKeyPress={handleKeyPress}
     >
-      <TableEl {...tableElProps}></TableEl>
+      <TableEl {...tableElProps} ref={tableRef}></TableEl>
       <div style={{ position: 'fixed', top: 0 }}>
         {/* <p>{`pos: ${mousePosition.x}^${mousePosition.y}`}</p>
         <p>{`col: ${hoveredCol.current}`}</p>

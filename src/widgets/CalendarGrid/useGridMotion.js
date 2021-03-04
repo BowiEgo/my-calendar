@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   motion,
   useAnimation,
@@ -19,24 +19,28 @@ const useGridMotion = ({ resolveFn } = {}) => {
     setWeekSwitchStatus('next');
   };
 
-  const switchPromise = new Promise((resolve, reject) => {
-    if (weekSwitchStatus !== 'static') {
-      if (weekSwitchStatus === 'prev') {
-        control.set({ x: -80, opacity: 0 });
-        control.start({ x: 0, opacity: 1 });
-      } else {
-        control.set({ x: 80, opacity: 0 });
-        control.start({ x: 0, opacity: 1 });
-      }
-      setTimeout(() => {
-        setWeekSwitchStatus('static');
-        resolve();
-      }, 300);
-    }
-  });
+  const switchPromise = useCallback(
+    () =>
+      new Promise((resolve, reject) => {
+        if (weekSwitchStatus !== 'static') {
+          if (weekSwitchStatus === 'prev') {
+            control.set({ x: -80, opacity: 0 });
+            control.start({ x: 0, opacity: 1 });
+          } else {
+            control.set({ x: 80, opacity: 0 });
+            control.start({ x: 0, opacity: 1 });
+          }
+          setTimeout(() => {
+            setWeekSwitchStatus('static');
+            resolve();
+          }, 300);
+        }
+      }),
+    [weekSwitchStatus, control],
+  );
 
   useEffect(() => {
-    switchPromise.then(() => resolveFn && resolveFn());
+    switchPromise().then(() => resolveFn && resolveFn());
   }, [weekSwitchStatus, switchPromise, resolveFn]);
 
   return {

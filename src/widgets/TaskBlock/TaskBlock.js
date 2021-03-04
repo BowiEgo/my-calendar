@@ -1,4 +1,10 @@
-import { useState, useMemo, forwardRef } from 'react';
+import {
+  useState,
+  useRef,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import styled from 'styled-components';
 import moment from 'moment';
 
@@ -9,8 +15,9 @@ const TaskBlock = forwardRef(
       unix,
       title = '无标题',
       type = 'work',
-      left,
       top,
+      x,
+      y,
       width,
       height,
       outerHeight,
@@ -33,8 +40,10 @@ const TaskBlock = forwardRef(
     // states
     const [isDragging, setIsDragging] = useState(false);
 
+    const containerRef = useRef(ref);
+
     // memo
-    const date = useMemo(() => moment(unix), [unix]);
+    const date = useMemo(() => moment(unix).startOf('day'), [unix]);
 
     const startTime = useMemo(() => getRelatveTime(top, outerHeight, date), [
       top,
@@ -87,11 +96,23 @@ const TaskBlock = forwardRef(
       onFinish();
     };
 
+    useImperativeHandle(ref, () => ({
+      getTask: () => {
+        return {
+          title: title,
+          unix: unix,
+          start: +startTime.format('x'),
+          end: +endTime.format('x'),
+        };
+      },
+    }));
+
     return (
       <Container
-        ref={ref}
-        left={left}
+        ref={containerRef}
         top={top}
+        x={x}
+        y={y}
         width={width}
         height={height}
         shadow={shadow}
@@ -131,8 +152,8 @@ const Container = styled.div.attrs(props => ({
     height: props.height + 'px',
     cursor: props.cursor,
     opacity: props.disabled ? '0.3' : 1,
-    transform: `translate3d(0, ${props.top}px, 0)`,
-    left: `${props.left ? props.left + 'px' : '4px'}`,
+    transform: `translate3d(0, ${props.y}px, 0)`,
+    left: `${props.x ? props.x + 'px' : '4px'}`,
     boxShadow: props.shadow
       ? `0 3px 6px -4px rgba(0, 0, 0, 0.12),
       0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)`

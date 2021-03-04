@@ -1,27 +1,43 @@
 import { useRef, useCallback, useContext } from 'react';
+import { useSelector } from 'react-redux';
 import styled, { ThemeContext } from 'styled-components';
 import { Button, CalendarInput, Select, Option } from '../../components';
 import moment from 'moment';
 
+const START = moment().startOf('day');
+const TIME_GAP = 15 * 60 * 1000;
+const TIME_NUM = (24 * 60 * 60 * 1000) / TIME_GAP;
+
 function getOptions() {
-  const timeGap = 15 * 60 * 1000;
-  const timeNum = (24 * 60 * 60 * 1000) / timeGap;
-  let timeData = Array(timeNum).fill(0);
+  let timeData = Array(TIME_NUM).fill(0);
   let i = -1;
   timeData = timeData.map(() => {
     i++;
-    return i * timeGap;
+    return i * TIME_GAP;
   });
   return timeData.map(seconds => {
     return {
-      label: moment(seconds).format('hh:mm'),
+      label: moment(START + seconds).format('HH:mm'),
       unix: seconds,
     };
   });
 }
 
-const TaskEditor = ({ lastSelectedDate, onDateChange, onClickCreate } = {}) => {
+function getTimeStep(unix) {
+  let result = Math.floor((unix - moment(unix).startOf('day')) / TIME_GAP);
+  return result;
+}
+
+const TaskEditor = ({
+  lastSelectedDate,
+  startTime,
+  endTime,
+  onDateChange,
+  onClickCreate,
+} = {}) => {
   const timeOptions = useRef(getOptions());
+
+  const tempTask = useSelector(state => state.tempTask);
 
   const themeContext = useContext(ThemeContext);
 
@@ -50,7 +66,7 @@ const TaskEditor = ({ lastSelectedDate, onDateChange, onClickCreate } = {}) => {
       <SelectGroup>
         <Select
           width={90}
-          defaultValue={timeOptions.current[0].unix}
+          defaultValue={timeOptions.current[getTimeStep(tempTask.start)].unix}
           onChange={handleStartTimeChanged}
         >
           {timeOptions.current.map((time, index) => (
@@ -61,7 +77,7 @@ const TaskEditor = ({ lastSelectedDate, onDateChange, onClickCreate } = {}) => {
         </Select>
         <Select
           width={90}
-          defaultValue={timeOptions.current[0].unix}
+          defaultValue={timeOptions.current[getTimeStep(tempTask.end)].unix}
           onChange={handleEndTimeChanged}
         >
           {timeOptions.current.map((time, index) => (
