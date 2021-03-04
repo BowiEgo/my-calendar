@@ -25,10 +25,12 @@ const TaskEditor = ({ lastSelectedDate, onDateChange, onClickCreate } = {}) => {
 
   const themeContext = useContext(ThemeContext);
 
-  const handleDateChange = useCallback((unix, week) => {
-    console.info('handleDateChange', unix);
-    onDateChange && onDateChange(unix, week);
-  }, []);
+  const handleDateChange = useCallback(
+    (unix, week) => {
+      onDateChange && onDateChange(unix, week);
+    },
+    [onDateChange],
+  );
 
   const handleStartTimeChanged = useCallback(value => {
     console.log('handleStartTimeChanged', value);

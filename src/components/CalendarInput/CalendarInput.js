@@ -9,7 +9,10 @@ const CalendarInput = ({ selectedDate, onChange }) => {
   const themeContext = useContext(ThemeContext);
 
   // state
-  const [{ date, isOpen }, updateState] = useImmer({ date: 0, isOpen: false });
+  const [{ date, isOpen }, updateState] = useImmer({
+    date: selectedDate,
+    isOpen: false,
+  });
 
   const popupRef = useRef();
 
@@ -35,7 +38,7 @@ const CalendarInput = ({ selectedDate, onChange }) => {
 
       onChange && onChange(unix, week);
     },
-    [updateState],
+    [updateState, onChange],
   );
 
   const handleInputClick = useCallback(() => {

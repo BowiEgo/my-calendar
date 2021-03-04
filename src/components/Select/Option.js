@@ -7,7 +7,7 @@ const Option = ({ value, children }) => {
 
   const handleClick = useCallback(() => {
     setSelectedValue(value);
-  }, [setSelectedValue]);
+  }, [value, setSelectedValue]);
 
   return <Container onClick={handleClick}>{children}</Container>;
 };

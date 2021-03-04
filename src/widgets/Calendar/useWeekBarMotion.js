@@ -1,16 +1,11 @@
 import { useEffect, useCallback } from 'react';
 import { motion, useAnimation } from 'framer-motion';
+import { initial } from 'lodash';
 
 const DURATION = 0.2;
 
 const useWeekBarMotion = ({ pos, initialPos, fixY, resolveFn } = {}) => {
   const control = useAnimation();
-
-  useEffect(() => {
-    if (pos >= 0) {
-      animePromise();
-    }
-  }, [pos]);
 
   const animePromise = useCallback(() => {
     if (initialPos > 0) {
@@ -23,7 +18,13 @@ const useWeekBarMotion = ({ pos, initialPos, fixY, resolveFn } = {}) => {
         // stiffness: 2000,
       });
     }
-  }, [pos]);
+  }, [pos, fixY, initialPos, control]);
+
+  useEffect(() => {
+    if (pos >= 0) {
+      animePromise();
+    }
+  }, [pos, animePromise]);
 
   return {
     motion,

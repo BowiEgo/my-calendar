@@ -32,6 +32,7 @@ const reducer = produce((draft = initState, action) => {
       return draft;
 
     case 'ADD_TASK':
+      console.log('ADD_TASK', payload);
       draft.taskList.push(payload.task);
       return draft;
 

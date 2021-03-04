@@ -88,7 +88,7 @@ const CalendarGrid = ({ selectedDate, week, scrollTop }) => {
             isActive={date.isSame(moment(selectedDate))}
             isToday={date.isSame(moment().startOf('day'))}
           >
-            <h5>{weekdaysShort[date.weekday()]}</h5>
+            <h5>{weekdaysShort.current[date.weekday()]}</h5>
             <span>{date.date()}</span>
           </WeekCell>
         </motion.div>

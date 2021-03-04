@@ -18,7 +18,7 @@ const CalendarCell = memo(
       } else {
         return 'inherit';
       }
-    }, [isActive, isToday]);
+    }, [isActive, isToday, themeContext]);
 
     const textColor = useMemo(() => {
       if (isActive || isToday) {
@@ -28,7 +28,7 @@ const CalendarCell = memo(
       } else {
         return themeContext.textColor;
       }
-    }, [isCurrentMonth, isActive, isToday]);
+    }, [isCurrentMonth, isActive, isToday, themeContext]);
 
     // render
     return unix ? (

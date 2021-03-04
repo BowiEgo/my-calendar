@@ -11,10 +11,6 @@ const useGridMotion = ({ resolveFn } = {}) => {
 
   const control = useAnimation();
 
-  useEffect(() => {
-    switchPromise.then(() => resolveFn && resolveFn());
-  }, [weekSwitchStatus]);
-
   const prev = () => {
     setWeekSwitchStatus('prev');
   };
@@ -38,6 +34,10 @@ const useGridMotion = ({ resolveFn } = {}) => {
       }, 300);
     }
   });
+
+  useEffect(() => {
+    switchPromise.then(() => resolveFn && resolveFn());
+  }, [weekSwitchStatus, switchPromise, resolveFn]);
 
   return {
     motion,

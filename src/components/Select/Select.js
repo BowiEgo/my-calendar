@@ -50,7 +50,7 @@ const Select = ({ defaultValue, width, children }) => {
     updateState(draft => {
       draft.isOpen = false;
     });
-  }, [value]);
+  }, [value, updateState]);
 
   return (
     <Container ref={containerRef} width={width}>

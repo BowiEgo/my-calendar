@@ -51,7 +51,7 @@ const TaskBlock = forwardRef(
       if (resizing) return 'ns-resize';
       if (moving) return 'move';
       if (isSolid) return 'pointer';
-    }, [resizing, moving]);
+    }, [resizing, moving, isSolid]);
 
     const handleMouseDown = e => {
       if (e) {

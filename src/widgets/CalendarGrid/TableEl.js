@@ -36,30 +36,37 @@ const TableEl = ({
     .map(() => ht++);
 
   const gridContext = useContext(GridContext);
+  const { gridEl, weekEl, labelEl, scrollEl } = gridContext;
+  const labelWidth = labelEl ? labelEl.getBoundingClientRect().width : 0;
+  const weekHeight = weekEl ? weekEl.getBoundingClientRect().height : 0;
+  const scrollTop = scrollEl ? scrollEl.scrollTop : 0;
 
   const tempBlockVisible = useMemo(() => {
     return (
-      tableBCR !== undefined &&
-      (isDrawing || isCreating) &&
-      tempBlock.height > criticalBlockHeight
+      isTempBlockVisible ||
+      (tableBCR !== undefined &&
+        (isDrawing || isCreating || isMoving) &&
+        tempBlock.height > criticalBlockHeight)
     );
-  }, [tableBCR, isDrawing, isCreating, tempBlock, criticalBlockHeight]);
+  }, [
+    isTempBlockVisible,
+    tableBCR,
+    isDrawing,
+    isCreating,
+    isMoving,
+    tempBlock,
+    criticalBlockHeight,
+  ]);
 
   const tempBlockPos = useMemo(() => {
-    const { gridEl, weekEl, labelEl, scrollEl } = gridContext;
-
-    let x =
-      tempBlock.left + (labelEl ? labelEl.getBoundingClientRect().width : 0);
-    let y =
-      tempBlock.top -
-      (scrollEl ? scrollEl.scrollTop : 0) +
-      (weekEl ? weekEl.getBoundingClientRect().height : 0);
+    let x = tempBlock.left + labelWidth;
+    let y = tempBlock.top - scrollTop + weekHeight;
 
     return {
       x: x,
       y: y,
     };
-  }, [tempBlock, gridContext]);
+  }, [tempBlock.left, tempBlock.top, labelWidth, weekHeight, scrollTop]);
 
   return (
     <>
@@ -105,6 +112,7 @@ const TableEl = ({
         <Portal container={tempBlockContainer} key={'portal'}>
           {tempBlockVisible && (
             <TaskBlock
+              style={{ zIndex: 0 }}
               ref={tempBlockRef}
               key={-1}
               unix={week[activedCol]}

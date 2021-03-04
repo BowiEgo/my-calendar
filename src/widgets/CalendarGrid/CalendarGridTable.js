@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useCallback,
+  useContext,
   forwardRef,
   useImperativeHandle,
 } from 'react';
@@ -11,6 +12,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { cloneDeep, update } from 'lodash';
 import { _reqFrame } from '../../utils/reqFrame';
+import GridContext from './context';
 import useTaskBlockList from './useTaskBlockList';
 import TableEl from './TableEl';
 
@@ -18,16 +20,16 @@ let bid = 0;
 const CRITICAL_BLOCK_HEIGHT = 4;
 const MODAL_WIDTH = 220;
 
-const getModalOffsetX = (element, boundary) => {
-  let offsetX = 0;
+const getModalPos = (element, boundary, offset) => {
+  let x = 0;
   if (element) {
     let bcr = element.getBoundingClientRect();
-    offsetX = bcr.left + bcr.width + 20;
-    if (offsetX + MODAL_WIDTH > boundary) {
-      offsetX = bcr.left - MODAL_WIDTH - 20;
+    x = bcr.left + bcr.width + 20;
+    if (x + MODAL_WIDTH > boundary) {
+      x = bcr.left - MODAL_WIDTH - 20;
     }
   }
-  return offsetX;
+  return x;
 };
 
 const CalendarGridTable = (
@@ -65,6 +67,15 @@ const CalendarGridTable = (
   const taskList = useSelector(state => state.taskList);
   const activedColStore = useSelector(state => state.activedCol);
   const isTaskEditorOpen = useSelector(state => state.isTaskEditorOpen);
+
+  const { gridEl, labelEl } = useContext(GridContext);
+
+  const gridLeft = useMemo(() => {
+    return gridEl ? gridEl.getBoundingClientRect().left : 0;
+  }, [gridEl]);
+  const labelWidth = useMemo(() => {
+    return labelEl ? labelEl.getBoundingClientRect().width : 0;
+  });
 
   const {
     blockList,
@@ -141,6 +152,7 @@ const CalendarGridTable = (
         tempBlock.current = {
           top: block.top,
           height: block.height,
+          left: (tableBCR.current.width / 7) * hoveredCol.current,
         };
         mousePositionCache.current.y = mousePosition.y;
         setActivedCol(hoveredCol.current);
@@ -181,7 +193,7 @@ const CalendarGridTable = (
   const handleBlockClick = useCallback((id, element) => {
     // console.log('handleBlockClick', id, element);
     // openModal(
-    //   getModalOffsetX(
+    //   getModalPos(
     //     element,
     //     tableBCR.current.left + tableBCR.current.width,
     //   ),
@@ -193,18 +205,20 @@ const CalendarGridTable = (
   }, []);
 
   const finishCreateTask = useCallback(() => {
-    addBlock({
-      id: bid++,
-      unix: week[activedCol],
-      top: tempBlock.current.top,
-      height: tempBlock.current.height,
-      actived: false,
-      disabled: false,
-      moving: false,
-    });
-    setIsCreating(false);
-    initTempBlock();
-  }, [week, activedCol, addBlock, initTempBlock]);
+    if (isCreating) {
+      addBlock({
+        id: bid++,
+        unix: week[activedCol],
+        top: tempBlock.current.top,
+        height: tempBlock.current.height,
+        actived: false,
+        disabled: false,
+        moving: false,
+      });
+      setIsCreating(false);
+      initTempBlock();
+    }
+  }, [week, isCreating, activedCol, addBlock, initTempBlock]);
 
   const handleMouseDown = useCallback(
     e => {
@@ -212,10 +226,12 @@ const CalendarGridTable = (
 
       if (isCreating) {
         setIsDrawing(false);
+        setIsCreating(false);
       }
       if (!isResizing) {
         setIsDrawing(true);
       }
+
       tempBlock.current.top = mousePosition.y;
       tempBlock.current.left =
         (tableBCR.current.width / 7) * hoveredCol.current;
@@ -237,7 +253,6 @@ const CalendarGridTable = (
         if (!isMoving) {
           setIsMoving(true);
         }
-
         if (!activedBlock.disabled) {
           updateBlock(activedBlock.id, { disabled: true });
         } else {
@@ -246,7 +261,6 @@ const CalendarGridTable = (
           tempBlock.current.left =
             (tableBCR.current.width / 7) * hoveredCol.current;
           setActivedCol(hoveredCol.current);
-          console.log('tempBlock-left', tempBlock.current);
         }
       }
     }
@@ -277,16 +291,33 @@ const CalendarGridTable = (
 
       if (tempBlock.current.height > CRITICAL_BLOCK_HEIGHT) {
         openModal(
-          getModalOffsetX(
+          getModalPos(
             tempBlockRef.current,
             tableBCR.current.left + tableBCR.current.width,
+            gridLeft + labelWidth,
           ),
         );
         setIsCreating(true);
+        dispatch({
+          type: 'CHANGE_SELECTED_DATE',
+          payload: {
+            date: week[activedCol],
+          },
+        });
       }
       setIsDrawing(false);
     },
-    [activedBlock, isCreating, handleBlockDisactive, openModal],
+    [
+      week,
+      activedCol,
+      activedBlock,
+      isCreating,
+      gridLeft,
+      labelWidth,
+      handleBlockDisactive,
+      openModal,
+      dispatch,
+    ],
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -303,23 +334,29 @@ const CalendarGridTable = (
   }, [onMounted]);
 
   useEffect(() => {
+    tempBlock.current.left = (tableBCR.current.width / 7) * activedCol;
+
     if (isTaskEditorOpen) {
-      dispatch({
-        type: 'CHANGE_SELECTED_DATE',
-        payload: {
-          date: week[activedCol],
-        },
-      });
       openModal(
-        getModalOffsetX(
+        getModalPos(
           tempBlockRef.current,
           tableBCR.current.left + tableBCR.current.width,
+          gridLeft + labelWidth,
         ),
       );
     }
-  }, [week, activedCol, isTaskEditorOpen, openModal]);
+  }, [
+    week,
+    activedCol,
+    isTaskEditorOpen,
+    gridLeft,
+    labelWidth,
+    openModal,
+    getModalPos,
+  ]);
 
   useEffect(() => {
+    tempBlock.current.left = (tableBCR.current.width / 7) * activedColStore;
     setActivedCol(activedColStore);
   }, [activedColStore]);
 
@@ -340,11 +377,10 @@ const CalendarGridTable = (
   }, [isDrawing, mousePosition, outArea]);
 
   useEffect(() => {
-    if (taskList.length === 0) {
-      return;
+    if (!isTaskEditorOpen) {
+      finishCreateTask();
     }
-    finishCreateTask();
-  }, [taskList, finishCreateTask]);
+  }, [isTaskEditorOpen, finishCreateTask]);
 
   const tableElProps = {
     tempBlockContainer,
@@ -379,9 +415,9 @@ const CalendarGridTable = (
     >
       <TableEl {...tableElProps}></TableEl>
       <div style={{ position: 'fixed', top: 0 }}>
-        <p>{`pos: ${mousePosition.x}^${mousePosition.y}`}</p>
+        {/* <p>{`pos: ${mousePosition.x}^${mousePosition.y}`}</p>
         <p>{`col: ${hoveredCol.current}`}</p>
-        <p>{`activedCol: ${activedCol}`}</p>
+        <p>{`activedCol: ${activedCol}`}</p> */}
         {/* <p>{`tempBlockTop: ${tempBlockTop}`}</p>
           <p>{`tempBlockHeight: ${tempBlockHeight}`}</p> */}
       </div>
